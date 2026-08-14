@@ -1,6 +1,6 @@
-# Tripa AI - Assistente Inteligente de Viagens e Ferias
+# Tripa AI - Assistente IA de Viagens e Férias
 
-O Tripa AI e um assistente IA concebido para analisar pedidos em linguagem natural e planear ferias e viagens economicas de forma automatizada e estruturada.
+O Tripa AI é um assistente IA concebido para analisar pedidos em linguagem natural e planear férias e viagens económicas de forma automatizada e estruturada.
 
 ---
 
