@@ -196,11 +196,11 @@ O ficheiro `vercel.json` garante o roteamento dos pedidos `/api/*` diretamente p
 
 ## 7. Roteiro de Implementacao
 
-### Fase 1: Setup Hello World Unificado na Vercel (Estado Atual)
+### Fase 1: Setup Hello World Unificado na Vercel (Concluida)
 - [x] Documentacao e arquitetura unificada na pasta docs.
-- [ ] Criacao do `api/index.py` (FastAPI Hello World com suporte a Groq e SSE).
-- [ ] Criacao do `src/` (Next.js 16.3.0 Hello World com interface ligada ao `/api/v1/health` e `/api/v1/chat/stream`).
-- [ ] Configuracao do `requirements.txt`, `package.json` e `vercel.json`.
+- [x] Criacao do `api/index.py` (FastAPI Hello World com suporte a Groq e SSE).
+- [x] Criacao do `src/` (Next.js 16.3.0 Hello World com interface ligada ao `/api/v1/health` e `/api/v1/chat/stream`).
+- [x] Configuracao do `requirements.txt`, `package.json` e `vercel.json`.
 
 ### Fase 2: Integracao de Ferramentas (Tavily e Kiwi)
 - [ ] Conector de voos Kiwi.
