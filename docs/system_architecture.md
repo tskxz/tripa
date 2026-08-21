@@ -202,10 +202,10 @@ O ficheiro `vercel.json` garante o roteamento dos pedidos `/api/*` diretamente p
 - [x] Criacao do `src/` (Next.js 16.3.0 Hello World com interface ligada ao `/api/v1/health` e `/api/v1/chat/stream`).
 - [x] Configuracao do `requirements.txt`, `package.json` e `vercel.json`.
 
-### Fase 2: Integracao de Ferramentas (Tavily e Kiwi)
-- [ ] Conector de voos Kiwi.
-- [ ] Conector de pesquisa Tavily.
-- [ ] Gerador de ligacoes com parametros para o Booking.com.
+### Fase 2: Integracao de Ferramentas (Tavily e Kiwi) (Concluida)
+- [x] Conector de voos Kiwi.
+- [x] Conector de pesquisa Tavily.
+- [x] Gerador de ligacoes com parametros para o Booking.com.
 
 ### Fase 3: Orquestracao com LangGraph e Calculo Orcamental
 - [ ] Fluxo de decisao com LangGraph na FastAPI.
