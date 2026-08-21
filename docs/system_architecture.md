@@ -207,9 +207,9 @@ O ficheiro `vercel.json` garante o roteamento dos pedidos `/api/*` diretamente p
 - [x] Conector de pesquisa Tavily.
 - [x] Gerador de ligacoes com parametros para o Booking.com.
 
-### Fase 3: Orquestracao com LangGraph e Calculo Orcamental
-- [ ] Fluxo de decisao com LangGraph na FastAPI.
-- [ ] Consolidacao financeira detalhada.
+### Fase 3: Orquestracao com LangGraph e Calculo Orcamental (Concluida)
+- [x] Fluxo de decisao com LangGraph na FastAPI.
+- [x] Consolidacao financeira detalhada.
 
 ### Fase 4: Interface Rica e Deploy
 - [ ] Cartoes interativos de voos, hoteis e discriminacao de despesas.
