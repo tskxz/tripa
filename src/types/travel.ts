@@ -32,9 +32,38 @@ export interface ChatStreamDone {
   conversation_id: string;
 }
 
+export interface FlightItem {
+  id: string;
+  airline: string;
+  flight_number: string;
+  departure: {
+    airport: string;
+    time: string;
+  };
+  arrival: {
+    airport: string;
+    time: string;
+  };
+  price: number;
+  currency: string;
+  booking_url: string;
+}
+
+export interface HotelItem {
+  id: string;
+  name: string;
+  neighborhood: string;
+  rating: number;
+  price_per_night: number;
+  total_price: number;
+  currency: string;
+  booking_url: string;
+}
+
 export interface StreamEventItem {
   id: string;
-  type: "step" | "message_delta" | "budget_summary" | "done" | "error";
+  type: "step" | "message_delta" | "budget_summary" | "flight_results" | "hotel_results" | "done" | "error";
   timestamp: string;
   payload: any;
 }
+
