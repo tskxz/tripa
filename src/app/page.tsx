@@ -9,9 +9,6 @@ import {
   SlidersHorizontal,
   Users,
   Wallet,
-  Sparkles,
-  Plane,
-  Building2,
   ShieldCheck,
   AlertCircle,
 } from "lucide-react";
@@ -68,16 +65,11 @@ export default function HomePage() {
               <Compass className="w-5 h-5" />
             </div>
             <div>
-              <div className="flex items-center space-x-2">
-                <span className="font-bold text-base tracking-tight text-slate-100">
-                  Tripa
-                </span>
-                <span className="px-2 py-0.5 text-[10px] font-semibold uppercase rounded bg-slate-800 text-sky-400 border border-slate-700">
-                  Assistente de Viagens
-                </span>
-              </div>
+              <span className="font-bold text-base tracking-tight text-slate-100 block">
+                Tripa
+              </span>
               <p className="text-[11px] text-slate-400">
-                Pesquisa e Planeamento Personalizado
+                Pesquisa e Planeamento de Viagens
               </p>
             </div>
           </div>
@@ -94,10 +86,6 @@ export default function HomePage() {
         {/* Secção Central de Pesquisa */}
         <section className="rounded-2xl border border-slate-800 bg-slate-900 p-6 sm:p-8 space-y-6 shadow-sm">
           <div className="space-y-2">
-            <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-md bg-slate-950 border border-slate-800 text-sky-400 text-xs font-medium">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Planeia a tua próxima viagem em linguagem natural</span>
-            </div>
             <h1 className="text-2xl sm:text-3xl font-bold text-slate-100">
               O teu itinerário perfeito em segundos
             </h1>
@@ -314,7 +302,7 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center space-x-2">
             <ShieldCheck className="w-4 h-4 text-slate-500" />
-            <span>Tripa AI &bull; Planeamento Inteligente de Viagens</span>
+            <span>Tripa &bull; Planeamento de Viagens</span>
           </div>
           <div className="flex items-center space-x-4 text-[11px]">
             <span>Pesquisa de Voos & Alojamento</span>
