@@ -73,11 +73,6 @@ export default function HomePage() {
               </p>
             </div>
           </div>
-
-          <div className="flex items-center space-x-2 text-xs">
-            <span className="h-2 w-2 rounded-full bg-emerald-500"></span>
-            <span className="text-slate-400 hidden sm:inline">Serviço Disponível</span>
-          </div>
         </div>
       </header>
 
