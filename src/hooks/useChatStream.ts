@@ -62,6 +62,32 @@ export function useChatStream() {
   });
 
   const abortControllerRef = useRef<AbortController | null>(null);
+  const readerRef = useRef<ReadableStreamDefaultReader<Uint8Array> | null>(null);
+
+  const stopStream = useCallback(() => {
+    if (readerRef.current) {
+      try {
+        readerRef.current.cancel();
+      } catch {
+        // Ignorar se ja cancelado
+      }
+      readerRef.current = null;
+    }
+    if (abortControllerRef.current) {
+      try {
+        abortControllerRef.current.abort();
+      } catch {
+        // Ignorar se ja abortado
+      }
+      abortControllerRef.current = null;
+    }
+    setState((prev) => ({
+      ...prev,
+      isLoading: false,
+      isStreaming: false,
+      friendlyStepMessage: prev.friendlyStepMessage ? "Pesquisa interrompida pelo utilizador." : "",
+    }));
+  }, []);
 
   const startStream = useCallback(
     async (
@@ -71,9 +97,7 @@ export function useChatStream() {
     ) => {
       if (!message.trim()) return;
 
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
+      stopStream();
 
       const controller = new AbortController();
       abortControllerRef.current = controller;
@@ -111,6 +135,8 @@ export function useChatStream() {
           signal: controller.signal,
         });
 
+        if (controller.signal.aborted) return;
+
         if (!response.ok) {
           throw new Error(`Serviço temporariamente indisponível (Código ${response.status})`);
         }
@@ -120,12 +146,15 @@ export function useChatStream() {
         }
 
         const reader = response.body.getReader();
+        readerRef.current = reader;
         const decoder = new TextDecoder("utf-8");
         let buffer = "";
 
         while (true) {
+          if (controller.signal.aborted) break;
+
           const { value, done } = await reader.read();
-          if (done) break;
+          if (done || controller.signal.aborted) break;
 
           buffer += decoder.decode(value, { stream: true });
           const lines = buffer.split("\n");
@@ -134,6 +163,8 @@ export function useChatStream() {
           let currentEvent = "message";
 
           for (let i = 0; i < lines.length; i++) {
+            if (controller.signal.aborted) break;
+
             const line = lines[i].trim();
             if (!line) continue;
 
@@ -149,6 +180,8 @@ export function useChatStream() {
                 const eventId = `${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
 
                 setState((prev) => {
+                  if (controller.signal.aborted) return prev;
+
                   const newLog: StreamEventItem = {
                     id: eventId,
                     type: currentEvent as any,
@@ -216,13 +249,18 @@ export function useChatStream() {
           }
         }
 
-        setState((prev) => ({
-          ...prev,
-          isLoading: false,
-          isStreaming: false,
-        }));
+        readerRef.current = null;
+
+        if (!controller.signal.aborted) {
+          setState((prev) => ({
+            ...prev,
+            isLoading: false,
+            isStreaming: false,
+          }));
+        }
       } catch (err: any) {
-        if (err.name === "AbortError") {
+        readerRef.current = null;
+        if (controller.signal.aborted || err.name === "AbortError" || err.name === "DOMException") {
           return;
         }
         setState((prev) => ({
@@ -233,20 +271,8 @@ export function useChatStream() {
         }));
       }
     },
-    []
+    [stopStream]
   );
-
-  const stopStream = useCallback(() => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-      abortControllerRef.current = null;
-      setState((prev) => ({
-        ...prev,
-        isLoading: false,
-        isStreaming: false,
-      }));
-    }
-  }, []);
 
   return {
     ...state,

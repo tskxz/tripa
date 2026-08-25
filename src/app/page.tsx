@@ -19,6 +19,7 @@ import { MarkdownRenderer } from "@/components/MarkdownRenderer";
 import { FlightCard } from "@/components/FlightCard";
 import { HotelCard } from "@/components/HotelCard";
 import { BudgetSummaryCard } from "@/components/BudgetSummaryCard";
+import { LogsPanel } from "@/components/LogsPanel";
 
 export default function HomePage() {
   const [promptMessage, setPromptMessage] = useState(
@@ -338,6 +339,7 @@ export default function HomePage() {
           </div>
         </div>
       </footer>
+      <LogsPanel />
     </div>
   );
 }

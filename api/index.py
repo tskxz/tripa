@@ -2,10 +2,19 @@
 Ponto de entrada FastAPI (Tripa AI Backend).
 Compativeis com Vercel Serverless Functions (@vercel/python).
 """
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from api.core.config import settings
 from api.v1.router import api_router
+from api.core.log_store import install_memory_handler
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Startup e shutdown da aplicacao."""
+    install_memory_handler()
+    yield
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -13,6 +22,7 @@ app = FastAPI(
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
     docs_url=f"{settings.API_V1_STR}/docs",
     redoc_url=f"{settings.API_V1_STR}/redoc",
+    lifespan=lifespan,
 )
 
 # Configuracao de Middleware CORS para desenvolvimento e producao
