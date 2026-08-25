@@ -3,6 +3,8 @@ Conector de pesquisa de voos utilizando o servidor MCP oficial da Kiwi (https://
 Integra com langchain-mcp-adapters e expoe ferramenta compativel com LangChain/LangGraph.
 """
 import logging
+import re
+import unicodedata
 from typing import Dict, Any, List, Optional
 from langchain_core.tools import tool
 from api.models.travel import FlightSearchQuery, FlightSearchResult, FlightOption
@@ -71,7 +73,6 @@ def generate_kiwi_search_url(origin: str, destination: str, date_from: str, date
     orig_slug = CITY_SLUGS.get(origin.lower().strip(), f"{origin.lower().strip()}-portugal")
     dest_slug = CITY_SLUGS.get(destination.lower().strip(), f"{destination.lower().strip()}")
 
-    # Garantir que dest_slug tem hifen se for palavra simples
     if "-" not in dest_slug:
         dest_slug = f"{dest_slug}-destination"
 
@@ -79,6 +80,45 @@ def generate_kiwi_search_url(origin: str, destination: str, date_from: str, date
         return f"https://www.kiwi.com/en/search/results/{orig_slug}/{dest_slug}/{date_from}/{date_to}"
     return f"https://www.kiwi.com/en/search/results/{orig_slug}/{dest_slug}/{date_from}"
 
+
+async def _estimate_flight_price_with_llm(origin: str, destination: str) -> float:
+    """
+    Usa o Groq LLM para estimar em tempo real o preco medio de voo ida e volta em EUR entre origem e destino.
+    """
+    try:
+        from api.services.tools.groq_client import get_groq_llm
+        llm = get_groq_llm(model_name="openai/gpt-oss-20b", temperature=0.1)
+        if not llm:
+            return _fallback_flight_price(destination)
+
+        prompt = (
+            f"Es um especialista em aviacao comercial. Estima o preco medio realista de um voo ida e volta em EUR entre {origin} e {destination}.\n"
+            f"Responde APENAS com um numero float (ex: 185.0 ou 520.0). Sem texto, sem moeda, sem markdown, sem explicacoes."
+        )
+        res = await llm.ainvoke(prompt)
+        raw = res.content.strip() if hasattr(res, "content") else str(res).strip()
+        match = re.search(r"(\d+(?:\.\d+)?)", raw)
+        if match:
+            val = float(match.group(1))
+            if 20.0 <= val <= 3000.0:
+                return round(val, 2)
+        return _fallback_flight_price(destination)
+    except Exception as e:
+        logger.warning(f"Estimativa LLM de voo falhou: {e}")
+        return _fallback_flight_price(destination)
+
+
+def _fallback_flight_price(destination: str) -> float:
+    nfkd = unicodedata.normalize("NFKD", destination.lower().strip())
+    dest_clean = "".join(c for c in nfkd if not unicodedata.combining(c))
+
+    if any(long_h in dest_clean for long_h in ["tailandia", "thailand", "tokyo", "japao", "japan", "bali", "indonesia", "nova iorque", "new york", "usa", "las vegas", "dubai", "mexico", "brasil", "brazil", "cancun", "maldivas"]):
+        return 480.0
+    elif any(short_h in dest_clean for short_h in ["barcelona", "madrid", "sevilha", "ibiza", "palma", "valencia", "faro", "lisboa", "porto", "vigo", "santiago"]):
+        return 55.0
+    elif any(med_h in dest_clean for med_h in ["roma", "rome", "paris", "londres", "london", "amsterdam", "amesterdao", "berlim", "berlin", "atenas", "marrocos", "fez", "marrakech", "praga", "prague", "viena", "vienna", "budapeste", "varsovia"]):
+        return 95.0
+    return 120.0
 
 
 async def fetch_flights_via_mcp(
@@ -91,6 +131,7 @@ async def fetch_flights_via_mcp(
 ) -> List[Dict[str, Any]]:
     """
     Tenta consultar o servidor MCP da Kiwi (https://mcp.kiwi.com) utilizando MultiServerMCPClient.
+    Caso indisponivel, estima o preco do voo em tempo real via Groq LLM com base na rota especifica.
     """
     try:
         from langchain_mcp_adapters.client import MultiServerMCPClient
@@ -107,36 +148,25 @@ async def fetch_flights_via_mcp(
         
         if search_flight_tool:
             tool_args = {
-                "fly_from": origin,
-                "fly_to": destination,
-                "date_from": date_from,
+                "flyFrom": origin,
+                "flyTo": destination,
+                "departureDate": date_from,
                 "passengers": passengers,
-                "curr": currency
+                "currency": currency
             }
             if date_to:
-                tool_args["date_to"] = date_to
+                tool_args["returnDate"] = date_to
                 
             raw_result = await search_flight_tool.ainvoke(tool_args)
-            if isinstance(raw_result, list):
+            if isinstance(raw_result, list) and raw_result and "price" in raw_result[0]:
                 return raw_result
-            elif isinstance(raw_result, dict):
-                return raw_result.get("data", [raw_result])
+            elif isinstance(raw_result, dict) and "data" in raw_result:
+                return raw_result.get("data", [])
     except Exception as e:
-        logger.warning(f"Consulta ao servidor MCP da Kiwi falhou ou esta indisponivel ({e}). A utilizar estruturacao de resposta.")
+        logger.warning(f"Consulta ao servidor MCP da Kiwi falhou ou esta indisponivel ({e}). A utilizar estimativa LLM.")
 
-    # Estimativa dinamica baseada na distancia do destino
-    import unicodedata
-    nfkd = unicodedata.normalize("NFKD", destination.lower().strip())
-    dest_clean = "".join(c for c in nfkd if not unicodedata.combining(c))
-
-    base_price = 120.0  # padrao para voos europeus de media distancia
-    if any(long_haul in dest_clean for long_haul in ["tailandia", "thailand", "tokyo", "japao", "japan", "bali", "indonesia", "nova iorque", "new york", "usa", "las vegas", "dubai", "mexico", "brasil", "brazil", "cancun", "maldivas"]):
-        base_price = 480.0
-    elif any(short_haul in dest_clean for short_haul in ["barcelona", "madrid", "sevilha", "ibiza", "palma", "valencia", "faro", "lisboa", "porto", "vigo", "santiago"]):
-        base_price = 55.0
-    elif any(med_haul in dest_clean for med_haul in ["roma", "rome", "paris", "londres", "london", "amsterdam", "amesterdao", "berlim", "berlin", "atenas", "marrocos", "fez", "marrakech", "praga", "prague", "viena", "vienna", "budapeste", "varsovia"]):
-        base_price = 95.0
-
+    # Estimativa dinamica em tempo real via LLM para a rota exata (ex: Porto -> Las Vegas)
+    base_price = await _estimate_flight_price_with_llm(origin, destination)
     kiwi_url = generate_kiwi_search_url(origin, destination, date_from)
 
     return [
@@ -182,7 +212,7 @@ async def search_kiwi_flights_tool(
     Pesquisa voos e tarifas economicas entre origem e destino utilizando o conector Kiwi.
     Requer cidade/codigo IATA de origem e destino, e data de partida.
     """
-    raw_flights = await fetch_flights_via_mcp(
+    results = await fetch_flights_via_mcp(
         origin=origin,
         destination=destination,
         date_from=date_from,
@@ -190,57 +220,53 @@ async def search_kiwi_flights_tool(
         passengers=passengers,
         currency=currency
     )
-
-    result_summary = []
-    for f in raw_flights:
+    
+    if not results:
+        return f"Nenhum voo encontrado entre {origin} e {destination} para a data {date_from}."
+        
+    output_lines = [f"Opcoes de voos encontradas para {destination}:"]
+    for f in results[:3]:
         price = f.get("price", "N/A")
         curr = f.get("currency", currency)
-        airline = f.get("airline", "Companhia N/A")
-        dep = f.get("departure_time", "N/A")
-        arr = f.get("arrival_time", "N/A")
-        url = f.get("booking_url", f"https://www.kiwi.com/deep?from={origin}&to={destination}")
-        result_summary.append(
-            f"- Voo {airline}: {origin.upper()} -> {destination.upper()} por {price} {curr} | Partida: {dep} -> Chegada: {arr} | Link: {url}"
-        )
-
-    return f"Opcoes de voos encontradas ({len(raw_flights)}):\n" + "\n".join(result_summary)
+        airline = f.get("airline", "Companhia Aerea")
+        url = f.get("booking_url", generate_kiwi_search_url(origin, destination, date_from))
+        output_lines.append(f"- {airline}: {price} {curr} | [Reservar voo]({url})")
+        
+    return "\n".join(output_lines)
 
 
 async def search_flights_structured(query: FlightSearchQuery) -> FlightSearchResult:
     """
-    Executa a pesquisa e devolve os dados em objeto FlightSearchResult fortemente tipado.
+    Wrapper estruturado para manter compatibilidade com modelos Pydantic.
     """
-    raw_list = await fetch_flights_via_mcp(
+    raw = await fetch_flights_via_mcp(
         origin=query.origin,
         destination=query.destination,
         date_from=query.date_from,
         date_to=query.date_to,
-        passengers=query.passengers,
-        currency=query.currency
+        passengers=query.passengers or 1,
+        currency=query.currency or "EUR"
     )
-
-    flights = []
-    for item in raw_list:
-        flight_opt = FlightOption(
-            flight_id=str(item.get("flight_id", f"KW-{query.origin}-{query.destination}")),
-            origin=str(item.get("origin", query.origin)),
-            destination=str(item.get("destination", query.destination)),
-            departure_time=str(item.get("departure_time", query.date_from)),
-            arrival_time=str(item.get("arrival_time", query.date_from)),
-            price=float(item.get("price", 75.0)),
-            currency=str(item.get("currency", query.currency)),
-            airline=str(item.get("airline", "Kiwi Partner Airline")),
-            transits=int(item.get("transits", 0)),
-            duration=str(item.get("duration", "2h 30m")),
-            booking_url=str(item.get("booking_url", f"https://www.kiwi.com/deep?from={query.origin}&to={query.destination}"))
+    options = [
+        FlightOption(
+            flight_id=f.get("flight_id", "KW-001"),
+            origin=f.get("origin", query.origin),
+            destination=f.get("destination", query.destination),
+            departure_time=f.get("departure_time", query.date_from),
+            arrival_time=f.get("arrival_time", query.date_from),
+            price=float(f.get("price", 95.0)),
+            currency=f.get("currency", "EUR"),
+            airline=f.get("airline", "Low Cost"),
+            transits=f.get("transits", 0),
+            duration=f.get("duration", "3h"),
+            booking_url=f.get("booking_url", "")
         )
-        flights.append(flight_opt)
-
+        for f in raw
+    ]
     return FlightSearchResult(
-        status="success",
         origin=query.origin,
         destination=query.destination,
-        total_found=len(flights),
-        flights=flights,
-        message=f"{len(flights)} opcoes de voos disponiveis encontradas via Kiwi."
+        date_from=query.date_from,
+        date_to=query.date_to,
+        options=options
     )
