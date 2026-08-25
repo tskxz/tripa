@@ -377,6 +377,10 @@ async def generate_response_node(state: TripaAgentState) -> TripaAgentState:
     flight_info = flights[0] if flights else {}
     hotel_info = hotels[0] if hotels else {}
 
+    default_kiwi_url = f"https://www.kiwi.com/deep?from={origin}&to={destination}&departure={state.get('date_from', '2026-11-12')}"
+    flight_booking_url = flight_info.get('booking_url') or default_kiwi_url
+    hotel_booking_url = hotel_info.get('booking_url') or "https://www.booking.com"
+
     text_parts = [
         f"### Roteiro Personalizado para {destination} ({duration} dias)\n\n",
         f"Com base na sua solicitacao, analisamos a rota ideal de **{origin}** para **{destination}** focando no melhor custo-beneficio:\n\n",
@@ -384,12 +388,12 @@ async def generate_response_node(state: TripaAgentState) -> TripaAgentState:
         f"- **Companhia**: {flight_info.get('airline', 'Companhia Low-Cost')}\n",
         f"- **Rota**: {origin} -> {destination}\n",
         f"- **Preco Estimado**: {flight_info.get('price', 65.0)} {state.get('currency', 'EUR')}\n",
-        f"- **Reserva Direta**: [Ver Voos no Kiwi.com]({flight_info.get('booking_url', 'https://www.kiwi.com')})\n\n",
+        f"- **Reserva Direta**: [Ver Voos no Kiwi.com]({flight_booking_url})\n\n",
         f"#### 2. Alojamento Sugerido (Booking.com)\n",
         f"- **Opcao**: {hotel_info.get('name', 'Hotel Economico Central')}\n",
         f"- **Zona**: {hotel_info.get('neighborhood', 'Centro Historico')}\n",
         f"- **Preco por Noite**: {hotel_info.get('estimated_price_per_night', 50.0)} {state.get('currency', 'EUR')}\n",
-        f"- **Reserva Direta**: [Reservar no Booking.com]({hotel_info.get('booking_url', 'https://www.booking.com')})\n\n",
+        f"- **Reserva Direta**: [Reservar no Booking.com]({hotel_booking_url})\n\n",
         f"#### 3. Dicas Turisticas e Gastronomicas\n"
     ]
 
@@ -511,7 +515,7 @@ async def run_tripa_graph_events(
                     "arrival": {"airport": f.get("destination", dest_name), "time": f.get("arrival_time", "2026-11-12T11:00:00")},
                     "price": f.get("price", 65.0),
                     "currency": currency,
-                    "booking_url": f.get("booking_url", "https://www.kiwi.com")
+                    "booking_url": f.get("booking_url") or f"https://www.kiwi.com/deep?from={origin_name}&to={dest_name}&departure={state.get('date_from', '2026-11-12')}"
                 }
                 for f in flights[:2]
             ]
