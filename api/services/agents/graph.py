@@ -6,6 +6,7 @@ import asyncio
 import json
 import logging
 import re
+import unicodedata
 import uuid
 from typing import AsyncGenerator, Dict, Any, List
 
@@ -225,15 +226,21 @@ _CURATED_TIPS: dict[str, list[str]] = {
 }
 
 
+def _normalize_key(text: str) -> str:
+    """Remove acentos e normaliza para lowercase para comparacao de chaves."""
+    nfkd = unicodedata.normalize("NFKD", text.lower().strip())
+    return "".join(c for c in nfkd if not unicodedata.combining(c))
+
+
 def _fallback_tips(destination: str, travel_style: str, duration: int) -> str:
     """
     Dicas curadas por destino. Usa dicas especificas se o destino for conhecido,
     caso contrario gera dicas semi-especificas com o nome do destino.
     """
-    key = destination.lower().strip()
-    # Tentar correspondencia parcial
+    key = _normalize_key(destination)
     for known_key, tips in _CURATED_TIPS.items():
-        if known_key in key or key in known_key:
+        known_normalized = _normalize_key(known_key)
+        if known_normalized in key or key in known_normalized:
             return "\n".join(tips[:3])
     # Fallback com destino inserido nas frases (menos generico)
     return "\n".join([
