@@ -315,15 +315,17 @@ async def run_tripa_graph_events(
 
     # Evento de resultados de voos (flight_results)
     flights = state.get("flight_options", [])
+    origin_name = state.get("origin", "Origem")
+    dest_name = state.get("destination", "Destino")
     if flights:
         flight_payload = {
             "flights": [
                 {
                     "id": f.get("flight_id", "fl_1"),
                     "airline": f.get("airline", "Companhia"),
-                    "flight_number": "FR1234",
-                    "departure": {"airport": f.get("origin", "OPO"), "time": f.get("departure_time", "2026-11-12T08:00:00")},
-                    "arrival": {"airport": f.get("destination", "BCN"), "time": f.get("arrival_time", "2026-11-12T11:00:00")},
+                    "flight_number": f.get("flight_number", "FR1234"),
+                    "departure": {"airport": f.get("origin", origin_name), "time": f.get("departure_time", "2026-11-12T08:00:00")},
+                    "arrival": {"airport": f.get("destination", dest_name), "time": f.get("arrival_time", "2026-11-12T11:00:00")},
                     "price": f.get("price", 65.0),
                     "currency": currency,
                     "booking_url": f.get("booking_url", "https://www.kiwi.com")
