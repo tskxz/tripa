@@ -3,11 +3,11 @@
 @tailwind utilities;
 
 :root {
-  --background: #020617;
-  --foreground: #f8fafc;
-  --surface: #0f172a;
-  --surface-border: #1e293b;
-  --accent: #0284c7;
+  --background: #0a0a0a;
+  --foreground: #fafafa;
+  --surface: #171717;
+  --surface-border: #262626;
+  --accent: #ffffff;
 }
 
 body {
@@ -19,24 +19,24 @@ body {
 
 /* Painel Solido Minimalista */
 .solid-panel {
-  background-color: #0f172a;
-  border: 1px solid #1e293b;
+  background-color: #171717;
+  border: 1px solid #262626;
 }
 
 .custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
-  background: rgba(15, 23, 42, 0.6);
+  background: #0a0a0a;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #334155;
+  background: #262626;
   border-radius: 9999px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #475569;
+  background: #404040;
 }
