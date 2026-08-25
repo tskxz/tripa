@@ -171,7 +171,7 @@ async def calculate_budget_node(state: TripaAgentState) -> TripaAgentState:
     """
     No 3: Calcula e consolida o resumo financeiro da viagem.
     """
-    budget_summary = compute_budget_from_state(state)
+    budget_summary = await compute_budget_from_state(state)
     state["budget_summary"] = budget_summary
     return state
 
