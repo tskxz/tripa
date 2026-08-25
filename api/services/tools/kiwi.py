@@ -11,6 +11,75 @@ logger = logging.getLogger(__name__)
 
 KIWI_MCP_SERVER_URL = "https://mcp.kiwi.com"
 
+# Mapeamento de cidades para slugs da Kiwi (ex: porto-portugal, paris-france)
+CITY_SLUGS = {
+    "porto": "porto-portugal",
+    "lisboa": "lisbon-portugal",
+    "faro": "faro-portugal",
+    "barcelona": "barcelona-spain",
+    "madrid": "madrid-spain",
+    "sevilha": "seville-spain",
+    "valencia": "valencia-spain",
+    "ibiza": "ibiza-spain",
+    "palma": "palma-de-mallorca-spain",
+    "paris": "paris-france",
+    "roma": "rome-italy",
+    "rome": "rome-italy",
+    "milan": "milan-italy",
+    "milao": "milan-italy",
+    "napoles": "naples-italy",
+    "veneza": "venice-italy",
+    "florenca": "florence-italy",
+    "londres": "london-united-kingdom",
+    "london": "london-united-kingdom",
+    "amsterdam": "amsterdam-netherlands",
+    "amesterdao": "amsterdam-netherlands",
+    "berlim": "berlin-germany",
+    "berlin": "berlin-germany",
+    "praga": "prague-czechia",
+    "prague": "prague-czechia",
+    "viena": "vienna-austria",
+    "atenas": "athens-greece",
+    "budapeste": "budapest-hungary",
+    "varsovia": "warsaw-poland",
+    "dubai": "dubai-united-arab-emirates",
+    "nova iorque": "new-york-city-new-york-united-states",
+    "new york": "new-york-city-new-york-united-states",
+    "las vegas": "las-vegas-nevada-united-states",
+    "tailandia": "bangkok-thailand",
+    "thailand": "bangkok-thailand",
+    "banguecoque": "bangkok-thailand",
+    "bangkok": "bangkok-thailand",
+    "tokyo": "tokyo-japan",
+    "toquio": "tokyo-japan",
+    "bali": "denpasar-indonesia",
+    "marrocos": "marrakech-morocco",
+    "marrakech": "marrakech-morocco",
+    "fez": "fez-morocco",
+    "brasil": "rio-de-janeiro-brazil",
+    "rio de janeiro": "rio-de-janeiro-brazil",
+    "salvador": "salvador-brazil",
+    "cancun": "cancun-mexico",
+    "mexico": "mexico-city-mexico",
+}
+
+
+def generate_kiwi_search_url(origin: str, destination: str, date_from: str, date_to: Optional[str] = None) -> str:
+    """
+    Gera o URL exato de pesquisa da Kiwi (ex: https://www.kiwi.com/en/search/results/porto-portugal/paris-france/2026-11-12/2026-11-16)
+    """
+    orig_slug = CITY_SLUGS.get(origin.lower().strip(), f"{origin.lower().strip()}-portugal")
+    dest_slug = CITY_SLUGS.get(destination.lower().strip(), f"{destination.lower().strip()}")
+
+    # Garantir que dest_slug tem hifen se for palavra simples
+    if "-" not in dest_slug:
+        dest_slug = f"{dest_slug}-destination"
+
+    if date_to:
+        return f"https://www.kiwi.com/en/search/results/{orig_slug}/{dest_slug}/{date_from}/{date_to}"
+    return f"https://www.kiwi.com/en/search/results/{orig_slug}/{dest_slug}/{date_from}"
+
+
 
 async def fetch_flights_via_mcp(
     origin: str,
@@ -65,6 +134,8 @@ async def fetch_flights_via_mcp(
     elif any(short_haul in dest_lower for short_haul in ["barcelona", "madrid", "sevilha", "ibiza", "palma", "valencia", "faro", "lisboa", "porto"]):
         base_price = 55.0
 
+    kiwi_url = generate_kiwi_search_url(origin, destination, date_from)
+
     return [
         {
             "flight_id": f"KW-{origin.upper()}-{destination.upper()}-001",
@@ -77,7 +148,7 @@ async def fetch_flights_via_mcp(
             "airline": "Ryanair / EasyJet (Kiwi Route)",
             "transits": 0,
             "duration": "3h 15m",
-            "booking_url": f"https://www.kiwi.com/deep?from={origin}&to={destination}&departure={date_from}"
+            "booking_url": kiwi_url
         },
         {
             "flight_id": f"KW-{origin.upper()}-{destination.upper()}-002",
@@ -90,7 +161,7 @@ async def fetch_flights_via_mcp(
             "airline": "TAP Air Portugal / Vueling",
             "transits": 0,
             "duration": "3h 15m",
-            "booking_url": f"https://www.kiwi.com/deep?from={origin}&to={destination}&departure={date_from}"
+            "booking_url": kiwi_url
         }
     ]
 

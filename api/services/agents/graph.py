@@ -12,7 +12,7 @@ from typing import AsyncGenerator, Dict, Any, List
 
 from langgraph.graph import StateGraph, END
 from api.models.state import TripaAgentState
-from api.services.tools.kiwi import fetch_flights_via_mcp
+from api.services.tools.kiwi import fetch_flights_via_mcp, generate_kiwi_search_url
 from api.services.tools.booking import generate_booking_url, get_booking_accommodations_structured
 from api.services.tools.tavily import execute_tavily_search
 from api.services.tools.groq_client import get_groq_llm
@@ -377,7 +377,7 @@ async def generate_response_node(state: TripaAgentState) -> TripaAgentState:
     flight_info = flights[0] if flights else {}
     hotel_info = hotels[0] if hotels else {}
 
-    default_kiwi_url = f"https://www.kiwi.com/deep?from={origin}&to={destination}&departure={state.get('date_from', '2026-11-12')}"
+    default_kiwi_url = generate_kiwi_search_url(origin, destination, state.get('date_from', '2026-11-12'), state.get('date_to', '2026-11-16'))
     flight_booking_url = flight_info.get('booking_url') or default_kiwi_url
     hotel_booking_url = hotel_info.get('booking_url') or "https://www.booking.com"
 
@@ -515,7 +515,7 @@ async def run_tripa_graph_events(
                     "arrival": {"airport": f.get("destination", dest_name), "time": f.get("arrival_time", "2026-11-12T11:00:00")},
                     "price": f.get("price", 65.0),
                     "currency": currency,
-                    "booking_url": f.get("booking_url") or f"https://www.kiwi.com/deep?from={origin_name}&to={dest_name}&departure={state.get('date_from', '2026-11-12')}"
+                    "booking_url": f.get("booking_url") or generate_kiwi_search_url(origin_name, dest_name, state.get('date_from', '2026-11-12'), state.get('date_to', '2026-11-16'))
                 }
                 for f in flights[:2]
             ]
