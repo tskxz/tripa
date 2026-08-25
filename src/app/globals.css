@@ -3,11 +3,13 @@
 @tailwind utilities;
 
 :root {
-  --background: #020617;
-  --foreground: #f8fafc;
-  --surface: #0f172a;
-  --surface-border: #1e293b;
-  --accent: #0284c7;
+  --background: #ffffff;
+  --foreground: #0a0a0a;
+}
+
+.dark {
+  --background: #0a0a0a;
+  --foreground: #fafafa;
 }
 
 body {
@@ -15,28 +17,23 @@ body {
   color: var(--foreground);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   min-height: 100vh;
-}
-
-/* Painel Solido Minimalista */
-.solid-panel {
-  background-color: #0f172a;
-  border: 1px solid #1e293b;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 
 .custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
-  background: rgba(15, 23, 42, 0.6);
+  background: transparent;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #334155;
+  background: #a3a3a3;
   border-radius: 9999px;
 }
 
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #475569;
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #262626;
 }
