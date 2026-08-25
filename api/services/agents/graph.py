@@ -153,26 +153,26 @@ async def generate_response_node(state: TripaAgentState) -> TripaAgentState:
     hotel_info = hotels[0] if hotels else {}
 
     text_parts = [
-        f"### ✈️ Roteiro Personalizado para {destination} ({duration} dias)\n\n",
+        f"### Roteiro Personalizado para {destination} ({duration} dias)\n\n",
         f"Com base na sua solicitacao, analisamos a rota ideal de **{origin}** para **{destination}** focando no melhor custo-beneficio:\n\n",
-        f"#### 1. 🛫 Voos Recomendados (Kiwi.com)\n",
+        f"#### 1. Voos Recomendados (Kiwi.com)\n",
         f"- **Companhia**: {flight_info.get('airline', 'Companhia Low-Cost')}\n",
         f"- **Rota**: {origin} -> {destination}\n",
         f"- **Preco Estimado**: {flight_info.get('price', 65.0)} {state.get('currency', 'EUR')}\n",
         f"- **Reserva Direta**: [Ver Voos no Kiwi.com]({flight_info.get('booking_url', 'https://www.kiwi.com')})\n\n",
-        f"#### 2. 🏨 Alojamento Sugerido (Booking.com)\n",
+        f"#### 2. Alojamento Sugerido (Booking.com)\n",
         f"- **Opcao**: {hotel_info.get('name', 'Hotel Economico Central')}\n",
         f"- **Zona**: {hotel_info.get('neighborhood', 'Centro Historico')}\n",
         f"- **Preco por Noite**: {hotel_info.get('estimated_price_per_night', 50.0)} {state.get('currency', 'EUR')}\n",
         f"- **Reserva Direta**: [Reservar no Booking.com]({hotel_info.get('booking_url', 'https://www.booking.com')})\n\n",
-        f"#### 3. 🗺️ Dicas Turisticas e Gastronomicas\n"
+        f"#### 3. Dicas Turisticas e Gastronomicas\n"
     ]
 
     for item in tavily_items[:2]:
         text_parts.append(f"- **{item.get('title', 'Dica')}**: {item.get('content', '')[:160]}...\n")
 
     text_parts.append(
-        f"\n#### 4. 📊 Total Estimado da Viagem: **{budget.get('total_estimated', 0)} {state.get('currency', 'EUR')}** "
+        f"\n#### 4. Total Estimado da Viagem: **{budget.get('total_estimated', 0)} {state.get('currency', 'EUR')}** "
         f"({'Dentro do orcamento!' if budget.get('is_under_budget') else 'Acima do teto pretendido.'})\n"
     )
 

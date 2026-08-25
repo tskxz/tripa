@@ -6,7 +6,15 @@ import {
   BudgetSummary,
   ChatStreamDone,
   StreamEventItem,
+  FlightItem,
+  HotelItem,
 } from "@/types/travel";
+
+export interface StreamFilters {
+  max_budget?: number;
+  travelers?: number;
+  direct_flights_only?: boolean;
+}
 
 export interface UseChatStreamState {
   isLoading: boolean;
@@ -14,9 +22,28 @@ export interface UseChatStreamState {
   error: string | null;
   accumulatedText: string;
   steps: ChatStreamStep[];
+  friendlyStepMessage: string;
+  flights: FlightItem[];
+  hotels: HotelItem[];
   budget: BudgetSummary | null;
   eventsLog: StreamEventItem[];
   doneInfo: ChatStreamDone | null;
+}
+
+function getFriendlyStepMessage(stepId: string, rawTitle?: string): string {
+  switch (stepId) {
+    case "parse_intent":
+      return "A analisar as tuas preferências de viagem...";
+    case "search_flights":
+    case "parallel_search":
+      return "A procurar as melhores rotas e alojamentos centrais...";
+    case "calculate_budget":
+      return "A calcular a estimativa e consolidação orçamental...";
+    case "generate_response":
+      return "A organizar o teu itinerário personalizado...";
+    default:
+      return rawTitle || "A processar o teu pedido de viagem...";
+  }
 }
 
 export function useChatStream() {
@@ -26,6 +53,9 @@ export function useChatStream() {
     error: null,
     accumulatedText: "",
     steps: [],
+    friendlyStepMessage: "",
+    flights: [],
+    hotels: [],
     budget: null,
     eventsLog: [],
     doneInfo: null,
@@ -33,148 +63,178 @@ export function useChatStream() {
 
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  const startStream = useCallback(async (message: string, currency: string = "EUR") => {
-    if (!message.trim()) return;
+  const startStream = useCallback(
+    async (
+      message: string,
+      currency: string = "EUR",
+      filters?: StreamFilters
+    ) => {
+      if (!message.trim()) return;
 
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
 
-    const controller = new AbortController();
-    abortControllerRef.current = controller;
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
 
-    setState({
-      isLoading: true,
-      isStreaming: true,
-      error: null,
-      accumulatedText: "",
-      steps: [],
-      budget: null,
-      eventsLog: [],
-      doneInfo: null,
-    });
-
-    try {
-      const response = await fetch("/api/v1/chat/stream", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "text/event-stream",
-        },
-        body: JSON.stringify({
-          message,
-          currency,
-          filters: {
-            travelers: 1,
-            direct_flights_only: false,
-          },
-        }),
-        signal: controller.signal,
+      setState({
+        isLoading: true,
+        isStreaming: true,
+        error: null,
+        accumulatedText: "",
+        steps: [],
+        friendlyStepMessage: "A iniciar a pesquisa de viagem...",
+        flights: [],
+        hotels: [],
+        budget: null,
+        eventsLog: [],
+        doneInfo: null,
       });
 
-      if (!response.ok) {
-        throw new Error(`Erro na resposta do servidor (Codigo ${response.status})`);
-      }
+      try {
+        const response = await fetch("/api/v1/chat/stream", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "text/event-stream",
+          },
+          body: JSON.stringify({
+            message,
+            currency,
+            filters: {
+              max_budget: filters?.max_budget || undefined,
+              travelers: filters?.travelers || 1,
+              direct_flights_only: filters?.direct_flights_only || false,
+            },
+          }),
+          signal: controller.signal,
+        });
 
-      if (!response.body) {
-        throw new Error("O corpo da resposta de streaming nao esta disponivel");
-      }
+        if (!response.ok) {
+          throw new Error(`Serviço temporariamente indisponível (Código ${response.status})`);
+        }
 
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder("utf-8");
-      let buffer = "";
+        if (!response.body) {
+          throw new Error("Não foi possível iniciar a receção de dados.");
+        }
 
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder("utf-8");
+        let buffer = "";
 
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop() || "";
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
 
-        let currentEvent = "message";
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() || "";
 
-        for (let i = 0; i < lines.length; i++) {
-          const line = lines[i].trim();
-          if (!line) continue;
+          let currentEvent = "message";
 
-          if (line.startsWith("event:")) {
-            currentEvent = line.substring(6).trim();
-            continue;
-          }
+          for (let i = 0; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (!line) continue;
 
-          if (line.startsWith("data:")) {
-            const dataStr = line.substring(5).trim();
-            try {
-              const parsedData = JSON.parse(dataStr);
-              const eventId = `${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+            if (line.startsWith("event:")) {
+              currentEvent = line.substring(6).trim();
+              continue;
+            }
 
-              setState((prev) => {
-                const newLog: StreamEventItem = {
-                  id: eventId,
-                  type: currentEvent as any,
-                  timestamp: new Date().toLocaleTimeString("pt-PT"),
-                  payload: parsedData,
-                };
+            if (line.startsWith("data:")) {
+              const dataStr = line.substring(5).trim();
+              try {
+                const parsedData = JSON.parse(dataStr);
+                const eventId = `${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
 
-                let updatedText = prev.accumulatedText;
-                let updatedSteps = [...prev.steps];
-                let updatedBudget = prev.budget;
-                let updatedDone = prev.doneInfo;
+                setState((prev) => {
+                  const newLog: StreamEventItem = {
+                    id: eventId,
+                    type: currentEvent as any,
+                    timestamp: new Date().toLocaleTimeString("pt-PT"),
+                    payload: parsedData,
+                  };
 
-                if (currentEvent === "step") {
-                  const existingIndex = updatedSteps.findIndex(
-                    (s) => s.step_id === parsedData.step_id
-                  );
-                  if (existingIndex >= 0) {
-                    updatedSteps[existingIndex] = parsedData;
-                  } else {
-                    updatedSteps.push(parsedData);
+                  let updatedText = prev.accumulatedText;
+                  let updatedSteps = [...prev.steps];
+                  let updatedFriendlyMsg = prev.friendlyStepMessage;
+                  let updatedFlights = prev.flights;
+                  let updatedHotels = prev.hotels;
+                  let updatedBudget = prev.budget;
+                  let updatedDone = prev.doneInfo;
+
+                  if (currentEvent === "step") {
+                    const existingIndex = updatedSteps.findIndex(
+                      (s) => s.step_id === parsedData.step_id
+                    );
+                    if (existingIndex >= 0) {
+                      updatedSteps[existingIndex] = parsedData;
+                    } else {
+                      updatedSteps.push(parsedData);
+                    }
+                    updatedFriendlyMsg = getFriendlyStepMessage(
+                      parsedData.step_id,
+                      parsedData.title
+                    );
+                  } else if (currentEvent === "flight_results") {
+                    if (parsedData.flights && Array.isArray(parsedData.flights)) {
+                      updatedFlights = parsedData.flights;
+                    }
+                  } else if (currentEvent === "hotel_results") {
+                    if (parsedData.hotels && Array.isArray(parsedData.hotels)) {
+                      updatedHotels = parsedData.hotels;
+                    }
+                  } else if (currentEvent === "message_delta") {
+                    if (parsedData.content) {
+                      updatedText += parsedData.content;
+                    }
+                  } else if (currentEvent === "budget_summary") {
+                    updatedBudget = parsedData;
+                  } else if (currentEvent === "done") {
+                    updatedDone = parsedData;
+                    updatedFriendlyMsg = "Pesquisa concluída com sucesso";
                   }
-                } else if (currentEvent === "message_delta") {
-                  if (parsedData.content) {
-                    updatedText += parsedData.content;
-                  }
-                } else if (currentEvent === "budget_summary") {
-                  updatedBudget = parsedData;
-                } else if (currentEvent === "done") {
-                  updatedDone = parsedData;
-                }
 
-                return {
-                  ...prev,
-                  isLoading: false,
-                  accumulatedText: updatedText,
-                  steps: updatedSteps,
-                  budget: updatedBudget,
-                  doneInfo: updatedDone,
-                  eventsLog: [newLog, ...prev.eventsLog],
-                };
-              });
-            } catch {
-              // Em caso de falha de parsing do JSON
+                  return {
+                    ...prev,
+                    isLoading: false,
+                    accumulatedText: updatedText,
+                    steps: updatedSteps,
+                    friendlyStepMessage: updatedFriendlyMsg,
+                    flights: updatedFlights,
+                    hotels: updatedHotels,
+                    budget: updatedBudget,
+                    doneInfo: updatedDone,
+                    eventsLog: [newLog, ...prev.eventsLog],
+                  };
+                });
+              } catch {
+                // Falha de parsing pontual
+              }
             }
           }
         }
-      }
 
-      setState((prev) => ({
-        ...prev,
-        isLoading: false,
-        isStreaming: false,
-      }));
-    } catch (err: any) {
-      if (err.name === "AbortError") {
-        return;
+        setState((prev) => ({
+          ...prev,
+          isLoading: false,
+          isStreaming: false,
+        }));
+      } catch (err: any) {
+        if (err.name === "AbortError") {
+          return;
+        }
+        setState((prev) => ({
+          ...prev,
+          isLoading: false,
+          isStreaming: false,
+          error: err.message || "Ocorreu um erro ao obter os dados da viagem.",
+        }));
       }
-      setState((prev) => ({
-        ...prev,
-        isLoading: false,
-        isStreaming: false,
-        error: err.message || "Ocorreu um erro ao processar o streaming.",
-      }));
-    }
-  }, []);
+    },
+    []
+  );
 
   const stopStream = useCallback(() => {
     if (abortControllerRef.current) {
