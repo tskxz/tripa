@@ -175,18 +175,72 @@ async def calculate_budget_node(state: TripaAgentState) -> TripaAgentState:
     return state
 
 
+# Dicas de fallback curadas por destino (usadas quando LLM nao esta disponivel)
+_CURATED_TIPS: dict[str, list[str]] = {
+    "india": [
+        "- **Thali e dhal**: Experimente um thali vegetariano nos restaurantes locais — uma refeicao completa por menos de 2 EUR. O dhal makhani e o roti sao obrigatorios no norte do pais.",
+        "- **Tuk-tuk negociado**: Negocie sempre o preco do tuk-tuk antes de entrar, ou use a app Ola (equivalente ao Uber) para tarifas fixas nas cidades maiores como Delhi, Mumbai e Jaipur.",
+        "- **Taj Mahal ao amanhecer**: A entrada custa cerca de 15 EUR para estrangeiros, mas o amanhecer evita filas e o calor intenso. Reserve bilhete online com antecedencia.",
+    ],
+    "brasil": [
+        "- **Pao de queijo e acai**: Comece o dia com pao de queijo mineiro e termine na praia com uma tigela de acai genuino — encontra nos quiosques locais por 3-6 EUR.",
+        "- **Metro em Sao Paulo e Rio**: O metro e onibus sao seguros e cobrem as principais atraccoes. Em Salvador, use o Elevador Lacerda (menos de 1 EUR) para ligar a Cidade Alta a Cidade Baixa.",
+        "- **Praia do Leme e Parque Lage**: A Praia do Leme no Rio e menos lotada que Copacabana e e gratuita. O Parque Lage oferece trilhos com vista para o Cristo Redentor sem custo.",
+    ],
+    "roma": [
+        "- **Cacio e pepe e supplì**: Evite restaurantes com fotos no menu. Procure tratorias no Trastevere ou Testaccio para cacio e pepe autentico e supplì al telefono (arrancini romanos) por 1-2 EUR.",
+        "- **Autocarros noturnos**: O passe diario de 7 EUR cobre metro e autocarro. A noite, os autocarros N substituem o metro. Compre o bilhete antes de entrar, nos quiosques ou tabacarias.",
+        "- **Palatino e Circo Maximo gratis**: O bilhete combinado Coliseu + Palatino + Foro Romano custa cerca de 16 EUR, mas o Circo Maximo, a Basilica di Santa Maria Maggiore e a Piazza Navona sao de entrada gratuita.",
+    ],
+    "paris": [
+        "- **Baguete e mercados locais**: Um almoco tipico parisiense e uma baguete com jambon e fromage comprada na boulangerie — menos de 5 EUR. O Marche d'Aligre ao sabado e o mais barato da cidade.",
+        "- **Navigo e Metro Linha 4**: O passe Navigo Decouverte semanal (cerca de 23 EUR) e a opcao mais economica para se deslocar por toda a Grande Paris, incluindo versailles e o CDG.",
+        "- **Sainte-Chapelle e Musee de Cluny**: A Catedral de Notre-Dame e exterior gratuito. A Sainte-Chapelle (12 EUR) e mais impressionante por dentro. O Musee de Cluny e gratuito para menores de 26 anos.",
+    ],
+    "japao": [
+        "- **Ramen e gyudon**: Um tacho de ramen num restaurante local custa 7-10 EUR. O Yoshinoya e Sukiya servem gyudon (tacho de carne e arroz) por 3-4 EUR — classicos do almoco economico japones.",
+        "- **IC Card (Suica/Pasmo)**: Carregue um cartao Suica ou Pasmo no aeroporto — funciona em metros, comboios e ate em conveniencias. Evita filas e e valido em todo o pais.",
+        "- **Senso-ji em Asakusa e bambuais de Arashiyama**: A entrada do Senso-ji e gratuita e mais bonita ao nascer do sol. O bambuaI de Arashiyama em Kyoto e tambem gratuito e de acesso livre.",
+    ],
+    "tailandia": [
+        "- **Pad thai e som tam**: Coma nos carros de rua (rod ped) — um pad thai autentico custa 1-2 EUR. Evite restaurantes com menus em ingles nas ruas turisticas de Khao San Road.",
+        "- **BTS Skytrain e MRT em Bangkok**: O passe de um dia do BTS cobre a maioria das atraccoes de Bangkok por cerca de 5 EUR. Para Chiang Mai, use os songthaew (pickups vermelhos partilhados) por menos de 1 EUR.",
+        "- **Doi Suthep e Templo Phra Kaew**: O Wat Phra Kaew em Bangkok custa 15 EUR mas e obrigatorio. O Doi Suthep em Chiang Mai (acesso 1 EUR + subida gratuita a pe) oferece vistas panoramicas soberbas.",
+    ],
+    "barcelona": [
+        "- **Pa amb tomaquet e pintxos**: O petisco catala basico e pa amb tomaquet (pao esfregado com tomate, 1-2 EUR). No bairro de Born, as tascas servem pintxos variados por 1-2 EUR cada.",
+        "- **T-Casual e metro TMB**: Compre o bilhete T-Casual (10 viagens, cerca de 12 EUR) em vez de bilhetes unitarios. Cobre metro, autocarro e a linha para Sitges.",
+        "- **Bunkers del Carmel e Barceloneta**: O miradouro dos Bunkers del Carmel e gratuito e tem a melhor vista de Barcelona, incluindo a Sagrada Familia. A Praia da Barceloneta e publica e gratuita.",
+    ],
+    "madrid": [
+        "- **Bocadillo de calamares e menu del dia**: O bocadillo de calamares (menos de 4 EUR) e o lanche tipico madrileno. O menu del dia (3 pratos com vinho, 10-13 EUR) e a melhor relacao custo-beneficio ao almoco.",
+        "- **Metro de Madrid e tarjeta multi**: O bilhete simples custa 1.50-2 EUR conforme a zona. O passe de 10 viagens (Tarjeta Multi) e o mais economico para deslocacoes frequentes.",
+        "- **Prado e Reina Sofia gratis**: O Museu do Prado e o Reina Sofia sao gratuitos nas duas ultimas horas antes de fechar (segunda a sabado). O Parque do Retiro e sempre gratuito.",
+    ],
+    "amsterdam": [
+        "- **Stroopwafel e bitterballen**: Compre stroopwafels nos mercados locais (nao nas lojas turisticas) por 1 EUR. Os bitterballen (croquetes holandeses) nos bares locais custam 1-2 EUR cada.",
+        "- **Bicicleta em vez de transporte publico**: Alugue uma bicicleta por 10-15 EUR/dia — o meio de transporte mais rapido e economico para ver a cidade. O GVB (transporte publico) tem passes diarios por 8.50 EUR.",
+        "- **Vondelpark e Begijnhof**: O Vondelpark e o espaco verde mais popular da cidade, com entrada gratuita. O Begijnhof, um patio medieval no centro, e um dos segredos mais bonitos e de acesso gratuito.",
+    ],
+}
+
+
 def _fallback_tips(destination: str, travel_style: str, duration: int) -> str:
     """
-    Gera dicas turisticas e gastronomicas de fallback quando o LLM nao esta disponivel.
+    Dicas curadas por destino. Usa dicas especificas se o destino for conhecido,
+    caso contrario gera dicas semi-especificas com o nome do destino.
     """
-    tips = [
-        f"- **Transporte local**: Utilize transportes publicos (metro, autocarros) para poupar e explorar {destination} como um local. Os passes diarios sao geralmente a opcao mais economica.",
-        f"- **Gastronomia economica**: Procure mercados locais, tascas e restaurantes fora das zonas mais turisticas para refeicoes autenticas a precos acessiveis.",
-        f"- **Atracoes gratuitas**: Muitas cidades oferecem museus com entrada gratuita em determinados dias, jardins publicos e miradouros sem custo.",
-        f"- **Cartao de turista**: Verifique se {destination} tem cartao de turista que inclua transporte e descontos em atracoes.",
-        f"- **Agua e refeicoes**: Leve sempre uma garrafa de agua reutilizavel e considere fazer piqueniques com produtos locais para reduzir despesas.",
-    ]
-    return "\n".join(tips[:3])
+    key = destination.lower().strip()
+    # Tentar correspondencia parcial
+    for known_key, tips in _CURATED_TIPS.items():
+        if known_key in key or key in known_key:
+            return "\n".join(tips[:3])
+    # Fallback com destino inserido nas frases (menos generico)
+    return "\n".join([
+        f"- **Gastronomia de rua em {destination}**: Evite os restaurantes em zonas turisticas e procure os mercados e vendedores locais para refeicoes autenticas e economicas, tipicas de {destination}.",
+        f"- **Transporte publico em {destination}**: Informe-se sobre passes diarios ou semanais de transporte publico logo a chegada — habitualmente a opcao mais barata e conveniente para se deslocar em {destination}.",
+        f"- **Atracoes sem fila em {destination}**: Visite as principais atraccoes de {destination} de manha cedo ou ao fim da tarde para evitar filas e temperaturas extremas. Muitos sitios historicos oferecem entrada gratuita em determinados dias.",
+    ])
 
 
 async def _generate_tips_with_llm(
@@ -196,37 +250,51 @@ async def _generate_tips_with_llm(
     tavily_context: str
 ) -> str:
     """
-    Usa o Groq LLM para gerar dicas turisticas e gastronomicas concisas e relevantes.
+    Usa o Groq LLM para gerar dicas turisticas e gastronomicas especificas e relevantes.
     Retorna string Markdown com lista de dicas, ou string vazia se falhar.
     """
-    llm = get_groq_llm(temperature=0.4)
+    llm = get_groq_llm(model_name="llama-3.3-70b-versatile", temperature=0.5)
     if not llm:
         return ""
 
-    context_block = f"\n\nInformacao de contexto recolhida da web (usa apenas se for relevante e factual):\n{tavily_context}" if tavily_context.strip() else ""
+    context_block = (
+        f"\n\nContexto recolhido da web sobre {destination} (usa como referencia factual se relevante):\n{tavily_context}"
+        if tavily_context.strip() else ""
+    )
 
     prompt = (
-        f"Gera exatamente 3 dicas turisticas e gastronomicas curtas e uteis para um viajante "
-        f"que vai passar {duration} dias em {destination} com estilo de viagem '{travel_style}'.\n"
-        f"Regras:\n"
-        f"- Responde APENAS com 3 itens de lista Markdown no formato: - **Titulo curto**: descricao de 1-2 frases.\n"
-        f"- Cada dica deve ser concreta, acionavel e especifica para {destination}.\n"
-        f"- Uma dica sobre gastronomia local (prato tipico, mercado ou restaurante economico).\n"
-        f"- Uma dica sobre transporte ou orientacao local.\n"
-        f"- Uma dica sobre atracao imperdivel gratuita ou de baixo custo.\n"
-        f"- Escreve em portugues de Portugal, sem emojis, sem introducao, sem conclusao.\n"
-        f"- NAO uses frases genericas como 'explore a cidade' ou 'divirta-se'.\n"
+        f"Es um especialista em viagens. Um turista portugues vai passar {duration} dias em {destination} com estilo '{travel_style}'.\n"
+        f"Escreve exatamente 3 dicas em lista Markdown. Cada dica OBRIGATORIAMENTE:\n"
+        f"1. Menciona um nome proprio ESPECIFICO de {destination}: nome de um prato, de um mercado, de uma rua, de uma atraccao ou de um meio de transporte REAL desse destino.\n"
+        f"2. Inclui um preco orientativo em EUR ou na moeda local (ex: '2 EUR', '500 rupias').\n"
+        f"3. E diferente das outras duas (uma gastronomica, uma de transporte, uma de atraccao).\n"
+        f"\nFormato obrigatorio para cada linha (sem variacao):\n"
+        f"- **[Nome especifico do destino]**: [descricao concreta de 1-2 frases com preco].\n"
+        f"\nRegras absolutas:\n"
+        f"- PROIBIDO escrever 'Muitas cidades', 'Os locais', 'qualquer cidade', 'em geral' ou frases genericas.\n"
+        f"- PROIBIDO repetir as mesmas sugestoes genericas de transporte, gastronomia e atracoes sem nomes proprios.\n"
+        f"- Escreve em portugues de Portugal, sem emojis, sem introducao, sem conclusao, APENAS as 3 linhas de lista.\n"
         f"{context_block}"
     )
 
     try:
         response = await llm.ainvoke(prompt)
         raw = response.content.strip() if hasattr(response, "content") else str(response).strip()
-        # Filtrar apenas as linhas de lista Markdown
-        lines = [ln for ln in raw.splitlines() if ln.strip().startswith("-")]
-        if lines:
-            return "\n".join(lines[:3])
-        return raw
+        # Aceitar linhas que comecem com '-' ou com '**'
+        lines = [ln for ln in raw.splitlines() if ln.strip().startswith("-") or ln.strip().startswith("**")]
+        # Normalizar linhas que nao comecem com '-'
+        normalized = []
+        for ln in lines:
+            stripped = ln.strip()
+            if not stripped.startswith("-"):
+                stripped = "- " + stripped
+            normalized.append(stripped)
+        if normalized:
+            return "\n".join(normalized[:3])
+        # Se nao encontrou linhas de lista, devolver o raw se nao for vazio
+        if raw:
+            return raw
+        return ""
     except Exception as e:
         logger.warning(f"Geracao de dicas com LLM falhou: {e}")
         return ""
