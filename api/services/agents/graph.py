@@ -387,7 +387,7 @@ async def generate_response_node(state: TripaAgentState) -> TripaAgentState:
         f"#### 1. Voos Recomendados (Kiwi.com)\n",
         f"- **Companhia**: {flight_info.get('airline', 'Companhia Low-Cost')}\n",
         f"- **Rota**: {origin} -> {destination}\n",
-        f"- **Preco Estimado**: {flight_info.get('price', 65.0)} {state.get('currency', 'EUR')}\n",
+        f"- **Preco Estimado**: {flight_info.get('price', 95.0)} {state.get('currency', 'EUR')}\n",
         f"- **Reserva Direta**: [Ver Voos no Kiwi.com]({flight_booking_url})\n\n",
         f"#### 2. Alojamento Sugerido (Booking.com)\n",
         f"- **Opcao**: {hotel_info.get('name', 'Hotel Economico Central')}\n",
@@ -513,7 +513,7 @@ async def run_tripa_graph_events(
                     "flight_number": f.get("flight_number", "FR1234"),
                     "departure": {"airport": f.get("origin", origin_name), "time": f.get("departure_time", "2026-11-12T08:00:00")},
                     "arrival": {"airport": f.get("destination", dest_name), "time": f.get("arrival_time", "2026-11-12T11:00:00")},
-                    "price": f.get("price", 65.0),
+                    "price": f.get("price", 95.0),
                     "currency": currency,
                     "booking_url": f.get("booking_url") or generate_kiwi_search_url(origin_name, dest_name, state.get('date_from', '2026-11-12'), state.get('date_to', '2026-11-16'))
                 }

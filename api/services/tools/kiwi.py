@@ -125,14 +125,17 @@ async def fetch_flights_via_mcp(
         logger.warning(f"Consulta ao servidor MCP da Kiwi falhou ou esta indisponivel ({e}). A utilizar estruturacao de resposta.")
 
     # Estimativa dinamica baseada na distancia do destino
-    base_price = 45.0
-    dest_lower = destination.lower()
-    if any(long_haul in dest_lower for long_haul in ["tailandia", "thailand", "tokyo", "japao", "japan", "bali", "indonesia", "nova iorque", "new york", "usa", "las vegas", "dubai", "mexico"]):
+    import unicodedata
+    nfkd = unicodedata.normalize("NFKD", destination.lower().strip())
+    dest_clean = "".join(c for c in nfkd if not unicodedata.combining(c))
+
+    base_price = 120.0  # padrao para voos europeus de media distancia
+    if any(long_haul in dest_clean for long_haul in ["tailandia", "thailand", "tokyo", "japao", "japan", "bali", "indonesia", "nova iorque", "new york", "usa", "las vegas", "dubai", "mexico", "brasil", "brazil", "cancun", "maldivas"]):
         base_price = 480.0
-    elif any(med_haul in dest_lower for med_haul in ["roma", "rome", "paris", "londres", "london", "amsterdam", "amsterdao", "berlim", "berlin", "atenas", "greci", "marrocos", "fez", "marrakech"]):
-        base_price = 95.0
-    elif any(short_haul in dest_lower for short_haul in ["barcelona", "madrid", "sevilha", "ibiza", "palma", "valencia", "faro", "lisboa", "porto"]):
+    elif any(short_haul in dest_clean for short_haul in ["barcelona", "madrid", "sevilha", "ibiza", "palma", "valencia", "faro", "lisboa", "porto", "vigo", "santiago"]):
         base_price = 55.0
+    elif any(med_haul in dest_clean for med_haul in ["roma", "rome", "paris", "londres", "london", "amsterdam", "amesterdao", "berlim", "berlin", "atenas", "marrocos", "fez", "marrakech", "praga", "prague", "viena", "vienna", "budapeste", "varsovia"]):
+        base_price = 95.0
 
     kiwi_url = generate_kiwi_search_url(origin, destination, date_from)
 

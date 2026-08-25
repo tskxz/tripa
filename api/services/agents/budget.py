@@ -137,9 +137,14 @@ async def compute_budget_from_state(state: TripaAgentState) -> Dict[str, Any]:
     )
 
     # Obter preco do primeiro voo
-    flight_cost = 65.0
+    flight_cost = 95.0
+    if any(long_h in destination for long_h in ["tailandia", "thailand", "tokyo", "japao", "japan", "bali", "indonesia", "nova iorque", "new york", "usa", "las vegas", "dubai", "mexico", "brasil", "brazil"]):
+        flight_cost = 480.0
+    elif any(short_h in destination for short_h in ["barcelona", "madrid", "sevilha", "ibiza", "palma", "valencia", "faro", "lisboa", "porto"]):
+        flight_cost = 55.0
+
     if flight_options:
-        flight_cost = flight_options[0].get("price", 65.0)
+        flight_cost = flight_options[0].get("price", flight_cost)
 
     # Obter preco por noite do alojamento
     hotel_cost_per_night = 50.0
