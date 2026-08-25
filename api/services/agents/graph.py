@@ -175,6 +175,28 @@ async def calculate_budget_node(state: TripaAgentState) -> TripaAgentState:
     return state
 
 
+def clean_tavily_snippet(content: str, max_chars: int = 220) -> str:
+    """Limpa snippets da Tavily removendo artefactos de HTML, links internos e truncamentos feios."""
+    if not content:
+        return ""
+    text = re.sub(r"^Title:\s*[^:]+:\s*", "", content)
+    text = re.sub(r"(?:Leia mais|Read more|Ver mais|Saiba mais)\s*[→►»]?", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"https?://\S+", "", text)
+    text = re.sub(r"\s+", " ", text).strip()
+    
+    if len(text) > max_chars:
+        truncated = text[:max_chars]
+        last_period = truncated.rfind(".")
+        if last_period > max_chars // 2:
+            text = truncated[:last_period + 1]
+        else:
+            text = truncated.rstrip() + "..."
+    elif not text.endswith(".") and len(text) > 0:
+        text += "."
+        
+    return text
+
+
 async def generate_response_node(state: TripaAgentState) -> TripaAgentState:
     """
     No 4: Sintetiza a resposta final estruturada em Markdown.
@@ -206,8 +228,15 @@ async def generate_response_node(state: TripaAgentState) -> TripaAgentState:
         f"#### 3. Dicas Turisticas e Gastronomicas\n"
     ]
 
-    for item in tavily_items[:2]:
-        text_parts.append(f"- **{item.get('title', 'Dica')}**: {item.get('content', '')[:160]}...\n")
+    for item in tavily_items[:3]:
+        raw_title = item.get("title", "Dica de Viagem")
+        title = raw_title.split(" - ")[0].split(" | ")[0].split(":")[0].strip()
+        if not title:
+            title = "Dica de Viagem"
+        raw_content = item.get("content", "")
+        clean_content = clean_tavily_snippet(raw_content)
+        if clean_content:
+            text_parts.append(f"- **{title}**: {clean_content}\n")
 
     text_parts.append(
         f"\n#### 4. Total Estimado da Viagem: **{budget.get('total_estimated', 0)} {state.get('currency', 'EUR')}** "
