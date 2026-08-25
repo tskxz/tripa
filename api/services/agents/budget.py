@@ -60,7 +60,25 @@ def compute_budget_from_state(state: TripaAgentState) -> Dict[str, Any]:
     max_budget = state.get("max_budget")
     currency = state.get("currency", "EUR")
 
-    # Obter preco do primeiro voo (ou valor por defeito se vazio)
+    destination = state.get("destination", "").lower()
+    travel_style = state.get("travel_style", "economico").lower()
+
+    # Preço base diário de comida + transportes por pessoa
+    daily_food_and_transport = 35.0
+    daily_activities_cost = 15.0
+
+    if any(cheap in destination for cheap in ["tailandia", "thailand", "bali", "indonesia", "marrocos", "fez", "marrakech", "india", "vietnam"]):
+        daily_food_and_transport = 15.0
+        daily_activities_cost = 8.0
+    elif any(expensive in destination for expensive in ["dubai", "nova iorque", "new york", "las vegas", "londres", "london", "paris", "tokyo", "japao", "japan", "suica"]):
+        daily_food_and_transport = 60.0
+        daily_activities_cost = 30.0
+
+    if "luxo" in travel_style or "premium" in travel_style:
+        daily_food_and_transport *= 2.0
+        daily_activities_cost *= 2.0
+
+    # Obter preco do primeiro voo
     flight_cost = 65.0
     if flight_options:
         flight_cost = flight_options[0].get("price", 65.0)
@@ -75,8 +93,8 @@ def compute_budget_from_state(state: TripaAgentState) -> Dict[str, Any]:
         hotel_cost_per_night=hotel_cost_per_night,
         duration_days=duration_days,
         passengers=passengers,
-        daily_food_and_transport=35.0,
-        daily_activities_cost=15.0,
+        daily_food_and_transport=daily_food_and_transport,
+        daily_activities_cost=daily_activities_cost,
         max_budget=max_budget,
         currency=currency
     )

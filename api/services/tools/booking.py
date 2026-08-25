@@ -79,20 +79,27 @@ def get_booking_accommodations_structured(query: BookingSearchQuery) -> BookingS
         budget_level=query.budget_level or "budget"
     )
 
-    dest_clean = query.destination.split(",")[0].strip()
-    
+    dest_lower = query.destination.lower()
+    base_hotel_price = 60.0
+    if any(expensive in dest_lower for expensive in ["dubai", "nova iorque", "new york", "las vegas", "londres", "london", "paris", "tokyo", "japao", "japan", "suica"]):
+        base_hotel_price = 110.0
+    elif any(cheap in dest_lower for cheap in ["tailandia", "thailand", "bali", "indonesia", "marrocos", "fez", "marrakech", "india", "vietnam"]):
+        base_hotel_price = 30.0
+    elif any(med in dest_lower for med in ["roma", "rome", "barcelona", "madrid", "amsterdam", "amsterdao", "atenas", "lisboa", "porto"]):
+        base_hotel_price = 70.0
+
     recommendations = [
         HotelRecommendation(
             name=f"Hotel Economico Centro {dest_clean}",
             area=f"Centro Historico de {dest_clean}",
-            estimated_price_per_night=55.0,
+            estimated_price_per_night=base_hotel_price,
             rating_category="Muito Bom (8.2+)",
             booking_url=direct_url
         ),
         HotelRecommendation(
             name=f"Hostel / Guesthouse Central {dest_clean}",
             area=f"Zona Proxima da Estacao Principal de {dest_clean}",
-            estimated_price_per_night=35.0,
+            estimated_price_per_night=round(base_hotel_price * 0.6, 2),
             rating_category="Economico e Bem Localizado",
             booking_url=direct_url
         )
