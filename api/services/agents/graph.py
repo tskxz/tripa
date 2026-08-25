@@ -223,6 +223,46 @@ _CURATED_TIPS: dict[str, list[str]] = {
         "- **Bicicleta em vez de transporte publico**: Alugue uma bicicleta por 10-15 EUR/dia — o meio de transporte mais rapido e economico para ver a cidade. O GVB (transporte publico) tem passes diarios por 8.50 EUR.",
         "- **Vondelpark e Begijnhof**: O Vondelpark e o espaco verde mais popular da cidade, com entrada gratuita. O Begijnhof, um patio medieval no centro, e um dos segredos mais bonitos e de acesso gratuito.",
     ],
+    "dubai": [
+        "- **Al Harees e shawarma no Deira**: Fuja dos restaurantes dos centros comerciais. No bairro de Deira, o harees (papa de trigo com frango ou borrego) custa menos de 3 EUR nas tascas locais. O shawarma de frango nos snack-bares custa 1-2 EUR.",
+        "- **Metro do Dubai (Red e Green Line)**: O Nol Card (cartao recarregavel) permite viagens no metro, autocarro e barco por 0.70-2 EUR por viagem — muito mais barato que os taxis. O metro liga o aeroporto ao Dubai Mall e a Marina.",
+        "- **Souk do Ouro e Al Fahidi**: O Souk do Ouro em Deira e o maior do mundo e e gratuito para visitar. O bairro historico de Al Fahidi (Al Bastakiya) tem museus por 1 EUR e as melhores vistas do Creek sem custo.",
+    ],
+    "bali": [
+        "- **Nasi goreng e mie goreng**: O prato national indonesio — arroz ou massa frita com ovo — custa 1-3 EUR nos warungs (restaurantes locais). Evite os restaurantes para turisticos em Seminyak e opte pelos warungs em Ubud.",
+        "- **Scooter alugada**: A scooter (5-8 EUR/dia) e o meio de transporte mais pratico em Bali. Para percursos mais longos, a app GoJek funciona como taxi de mota ou carro a precos fixos.",
+        "- **Templo de Tirta Empul e terracos de arroz de Tegallalang**: O Tirta Empul (fonte sagrada em Tampaksiring) tem entrada por 2 EUR. Os terracos de arroz de Tegallalang sao iconicos e de acesso livre, embora alguns mirantes cobrem 1-2 EUR.",
+    ],
+    "mexico": [
+        "- **Tacos al pastor e tortas**: Nos mercados e bancas de rua no centro do Mexico City, um taco al pastor custa menos de 1 EUR. A Torta de Chilaquiles no Mercado de la Merced e uma das experiencias gastronomicas mais autenticas.",
+        "- **Metro do Mexico City**: O bilhete do metro custa 0.25 EUR — um dos mais baratos do mundo. Cobre quase toda a cidade. Para Xochimilco, use o metro ate Taxquena e depois um barco trajinera.",
+        "- **Teotihuacan e Zocalo**: O Zocalo (Praca da Constituicao) e o centro historico sao de acesso gratuito. As piramides de Teotihuacan ficam a 50km e a entrada e de cerca de 4 EUR, com visita de manha para evitar o calor intenso.",
+    ],
+    "grecia": [
+        "- **Souvlaki e gyros**: Uma pita gyros autentica nas tabernas do Monastiraki em Atenas custa 2-3 EUR — muito mais barata que nos restaurantes da Plaka. Em Santorini, prefira os mercados de Fira ao Oia.",
+        "- **Metro de Atenas e bilhete combinado**: O bilhete de 90 minutos cobre metro, autocarro e elétrico por 1.20 EUR. O passe diario (4.10 EUR) inclui o autocarro do aeroporto ate ao centro.",
+        "- **Acropole e Museu de Heraklion**: O bilhete combinado da Acropole cobre 7 sitios arqueologicos por 30 EUR (ou 15 EUR fora da epoca alta). Os museus arqueologicos nacionais sao gratuitos no primeiro domingo de cada mes.",
+    ],
+    "marrocos": [
+        "- **Tagine e msemen**: Um tagine autentico nas pequenas tascas (ksour) da Medina de Fez ou Marrakech custa 3-5 EUR. O msemen (crepe marroquino) nos mercados matinais custa menos de 1 EUR.",
+        "- **Petit taxi**: Os petit taxis (taxis pequenos de 3 lugares) sao a forma mais economica de se deslocar nas cidades — 1-3 EUR por corrida. Exija sempre o taximetro ou negocie o preco antes.",
+        "- **Medina de Fez e Jardins Majorelle**: A Medina de Fez (patrimonio UNESCO) e de acesso gratuito para deambular. Os Jardins Majorelle em Marrakech custam 6 EUR — reserve de manha para evitar a confusao de grupos organizados.",
+    ],
+    "nova iorque": [
+        "- **Hot dog e bagel do carrinho**: O hot dog nos carrinhos de rua perto do Central Park custa 2-3 USD. Um bagel com cream cheese em qualquer padaria local custa 2-4 USD — a opcao de pequeno-almoco tipica dos nova-iorquinos.",
+        "- **Metro de Nova Iorque (OMNY)**: O cartao OMNY com limite de 34 USD semanais e a melhor opcao — apos 12 viagens, o resto da semana e gratuito. O PATH train liga Manhattan ao New Jersey por 2.10 USD.",
+        "- **High Line e Brooklyn Bridge**: O High Line (parque elevado sobre uma linha ferroviaria desativada) e gratuito e um dos melhores mirantes de Manhattan. A travessia a pe da Brooklyn Bridge e gratuita e demora 30-40 minutos.",
+    ],
+    "londres": [
+        "- **Fish and chips e mercado Borough**: Um fish and chips autentico em Brixton ou Hackney custa 6-9 GBP. O Borough Market (sabado de manha) e gratuito para entrar e tem amostras de produtos locais e pratos de 4-8 GBP.",
+        "- **Oyster Card e Travelcard**: O Oyster Card limita o gasto diario no metro e autocarro (teto de 8.10 GBP na zona 1-2). O autocarro noturno substitui o metro depois da meia-noite e e coberto pelo Oyster.",
+        "- **Tate Modern e British Museum**: Ambos sao de entrada gratuita — raridade em museus de nivel mundial. A Tate Modern tem exposicoes temporarias pagas, mas as coleccoes permanentes sao sempre gratuitas.",
+    ],
+    "lisboa": [
+        "- **Pasteis de Belem e bifanas**: Os pasteis de Belem custam 1.30 EUR cada na pastelaria original. A bifana (escalope de porco em pao) nas tascas do Intendente ou Martim Moniz custa 2-3 EUR.",
+        "- **Carris e Viva Viagem**: O passe 24h do Carris (Lisboa) custa 6.60 EUR e inclui elétrico 28, autocarro e metro. O passe mensal e muito mais economico para estadias longas.",
+        "- **Miradouro da Graca e LX Factory**: O Miradouro da Graca e o menos turístico e tem a melhor vista de Lisboa sem custo. O LX Factory ao domingo (mercado de domingo) tem entrada gratuita e artesanato e gastronomia local.",
+    ],
 }
 
 
@@ -287,23 +327,36 @@ async def _generate_tips_with_llm(
     try:
         response = await llm.ainvoke(prompt)
         raw = response.content.strip() if hasattr(response, "content") else str(response).strip()
-        # Aceitar linhas que comecem com '-' ou com '**'
-        lines = [ln for ln in raw.splitlines() if ln.strip().startswith("-") or ln.strip().startswith("**")]
-        # Normalizar linhas que nao comecem com '-'
+        logger.debug(f"LLM tips raw response for '{destination}': {raw[:300]!r}")
+        if not raw:
+            logger.warning(f"LLM retornou resposta vazia para dicas de '{destination}'")
+            return ""
+        # Aceitar linhas que comecem com '-', '*' ou numero
+        lines = [
+            ln for ln in raw.splitlines()
+            if ln.strip() and (
+                ln.strip().startswith("-")
+                or ln.strip().startswith("*")
+                or (ln.strip()[0].isdigit() and "." in ln.strip()[:3])
+            )
+        ]
+        # Normalizar linhas para comecar com '-'
         normalized = []
         for ln in lines:
             stripped = ln.strip()
+            # remover prefixo de numeracao como '1. '
+            import re as _re
+            stripped = _re.sub(r'^\d+\.\s*', '', stripped)
             if not stripped.startswith("-"):
-                stripped = "- " + stripped
+                stripped = "- " + stripped.lstrip("*").strip()
             normalized.append(stripped)
         if normalized:
             return "\n".join(normalized[:3])
-        # Se nao encontrou linhas de lista, devolver o raw se nao for vazio
-        if raw:
-            return raw
-        return ""
+        # Fallback: devolver o raw se nao for vazio (o frontend consegue renderizar)
+        logger.warning(f"LLM nao devolveu lista formatada para '{destination}', usando raw")
+        return raw
     except Exception as e:
-        logger.warning(f"Geracao de dicas com LLM falhou: {e}")
+        logger.warning(f"Geracao de dicas com LLM falhou para '{destination}': {e}")
         return ""
 
 
