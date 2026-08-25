@@ -12,7 +12,7 @@ from typing import AsyncGenerator, Dict, Any, List
 
 from langgraph.graph import StateGraph, END
 from api.models.state import TripaAgentState
-from api.services.tools.kiwi import fetch_flights_via_mcp
+from api.services.tools.kiwi import fetch_flights_via_mcp, generate_kiwi_search_url
 from api.services.tools.booking import generate_booking_url, get_booking_accommodations_structured
 from api.services.tools.tavily import execute_tavily_search
 from api.services.tools.groq_client import get_groq_llm
@@ -171,7 +171,7 @@ async def calculate_budget_node(state: TripaAgentState) -> TripaAgentState:
     """
     No 3: Calcula e consolida o resumo financeiro da viagem.
     """
-    budget_summary = compute_budget_from_state(state)
+    budget_summary = await compute_budget_from_state(state)
     state["budget_summary"] = budget_summary
     return state
 
@@ -311,15 +311,17 @@ async def _generate_tips_with_llm(
 
     prompt = (
         f"Es um especialista em viagens. Um turista portugues vai passar {duration} dias em {destination} com estilo '{travel_style}'.\n"
-        f"Escreve exatamente 3 dicas em lista Markdown. Cada dica OBRIGATORIAMENTE:\n"
-        f"1. Menciona um nome proprio ESPECIFICO de {destination}: nome de um prato, de um mercado, de uma rua, de uma atraccao ou de um meio de transporte REAL desse destino.\n"
-        f"2. Inclui um preco orientativo em EUR ou na moeda local (ex: '2 EUR', '500 rupias').\n"
-        f"3. E diferente das outras duas (uma gastronomica, uma de transporte, uma de atraccao).\n"
-        f"\nFormato obrigatorio para cada linha (sem variacao):\n"
-        f"- **[Nome especifico do destino]**: [descricao concreta de 1-2 frases com preco].\n"
+        f"Escreve exatamente 3 dicas em lista Markdown. As 3 dicas devem ser divididas estritamente por estas 3 categorias:\n"
+        f"1. Gastronomia (prato, restaurante ou comida de rua tipica de {destination})\n"
+        f"2. Transporte (meio de transporte, passe ou app local de {destination})\n"
+        f"3. Atracao (ponto turistico, templo, parque ou museu de {destination})\n"
+        f"\nFormato OBRIGATORIO para cada linha (deve incluir a categoria no inicio):\n"
+        f"- **Gastronomia - [Nome da comida/local]**: [descricao de 1 frase com preco orientativo].\n"
+        f"- **Transporte - [Nome do transporte/passe]**: [descricao de 1 frase com preco orientativo].\n"
+        f"- **Atracao - [Nome do local/templo]**: [descricao de 1 frase com preco orientativo].\n"
         f"\nRegras absolutas:\n"
-        f"- PROIBIDO escrever 'Muitas cidades', 'Os locais', 'qualquer cidade', 'em geral' ou frases genericas.\n"
-        f"- PROIBIDO repetir as mesmas sugestoes genericas de transporte, gastronomia e atracoes sem nomes proprios.\n"
+        f"- PROIBIDO omitir a categoria (Gastronomia, Transporte, Atracao) no inicio da dica.\n"
+        f"- PROIBIDO escrever 'Muitas cidades', 'Os locais', 'qualquer cidade' ou frases genericas sem nomes proprios de {destination}.\n"
         f"- Escreve em portugues de Portugal, sem emojis, sem introducao, sem conclusao, APENAS as 3 linhas de lista.\n"
         f"{context_block}"
     )
@@ -375,19 +377,23 @@ async def generate_response_node(state: TripaAgentState) -> TripaAgentState:
     flight_info = flights[0] if flights else {}
     hotel_info = hotels[0] if hotels else {}
 
+    default_kiwi_url = generate_kiwi_search_url(origin, destination, state.get('date_from', '2026-11-12'), state.get('date_to', '2026-11-16'))
+    flight_booking_url = flight_info.get('booking_url') or default_kiwi_url
+    hotel_booking_url = hotel_info.get('booking_url') or "https://www.booking.com"
+
     text_parts = [
         f"### Roteiro Personalizado para {destination} ({duration} dias)\n\n",
         f"Com base na sua solicitacao, analisamos a rota ideal de **{origin}** para **{destination}** focando no melhor custo-beneficio:\n\n",
         f"#### 1. Voos Recomendados (Kiwi.com)\n",
         f"- **Companhia**: {flight_info.get('airline', 'Companhia Low-Cost')}\n",
         f"- **Rota**: {origin} -> {destination}\n",
-        f"- **Preco Estimado**: {flight_info.get('price', 65.0)} {state.get('currency', 'EUR')}\n",
-        f"- **Reserva Direta**: [Ver Voos no Kiwi.com]({flight_info.get('booking_url', 'https://www.kiwi.com')})\n\n",
+        f"- **Preco Estimado**: {flight_info.get('price', 95.0)} {state.get('currency', 'EUR')}\n",
+        f"- **Reserva Direta**: [Ver Voos no Kiwi.com]({flight_booking_url})\n\n",
         f"#### 2. Alojamento Sugerido (Booking.com)\n",
         f"- **Opcao**: {hotel_info.get('name', 'Hotel Economico Central')}\n",
         f"- **Zona**: {hotel_info.get('neighborhood', 'Centro Historico')}\n",
         f"- **Preco por Noite**: {hotel_info.get('estimated_price_per_night', 50.0)} {state.get('currency', 'EUR')}\n",
-        f"- **Reserva Direta**: [Reservar no Booking.com]({hotel_info.get('booking_url', 'https://www.booking.com')})\n\n",
+        f"- **Reserva Direta**: [Reservar no Booking.com]({hotel_booking_url})\n\n",
         f"#### 3. Dicas Turisticas e Gastronomicas\n"
     ]
 
@@ -507,9 +513,9 @@ async def run_tripa_graph_events(
                     "flight_number": f.get("flight_number", "FR1234"),
                     "departure": {"airport": f.get("origin", origin_name), "time": f.get("departure_time", "2026-11-12T08:00:00")},
                     "arrival": {"airport": f.get("destination", dest_name), "time": f.get("arrival_time", "2026-11-12T11:00:00")},
-                    "price": f.get("price", 65.0),
+                    "price": f.get("price", 95.0),
                     "currency": currency,
-                    "booking_url": f.get("booking_url", "https://www.kiwi.com")
+                    "booking_url": f.get("booking_url") or generate_kiwi_search_url(origin_name, dest_name, state.get('date_from', '2026-11-12'), state.get('date_to', '2026-11-16'))
                 }
                 for f in flights[:2]
             ]
