@@ -53,6 +53,11 @@ export function LogsPanel() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // Não mostrar logs em produção (master)
+  if (process.env.NODE_ENV === "production") {
+    return null;
+  }
+
   const fetchLogs = useCallback(async () => {
     setLoading(true);
     try {
