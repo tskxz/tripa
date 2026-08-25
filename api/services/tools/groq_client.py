@@ -3,34 +3,34 @@ Inicializador e gestor de cliente LLM Groq (Llama 3.2) com Tool Binding.
 """
 import logging
 from typing import Optional, List, Any
+from langchain_groq import ChatGroq
 from api.core.config import settings
 
 logger = logging.getLogger(__name__)
 
 
-def get_groq_llm(model_name: str = "llama-3.2-11b-vision-preview", temperature: float = 0.2):
+def get_groq_llm(model_name: str = "llama-3.1-8b-instant", temperature: float = 0.2):
     """
-    Inicializa o modelo ChatGroq utilizando a chave GROQ_API_KEY configurada.
+    Retorna uma instancia configurada de ChatGroq para ser usada pelos agentes.
+    Retorna None se GROQ_API_KEY nao estiver presente.
     """
-    api_key = settings.GROQ_API_KEY
-    if not api_key:
-        logger.warning("GROQ_API_KEY nao foi encontrada no ficheiro .env. Algumas operacoes de inferencia em tempo real podem requerer esta chave.")
-    
+    if not settings.GROQ_API_KEY or not settings.GROQ_API_KEY.strip():
+        logger.warning("GROQ_API_KEY nao configurada em .env")
+        return None
     try:
-        from langchain_groq import ChatGroq
         return ChatGroq(
-            groq_api_key=api_key or "gsk_dummy_key_for_initialization",
+            groq_api_key=settings.GROQ_API_KEY,
             model_name=model_name,
-            temperature=temperature
+            temperature=temperature,
         )
     except Exception as e:
-        logger.error(f"Erro ao inicializar o ChatGroq: {e}")
+        logger.error(f"Erro ao instanciar ChatGroq: {e}")
         return None
 
 
-def get_llm_with_tools(tools: List[Any], model_name: str = "llama-3.2-11b-vision-preview"):
+def get_llm_with_tools(tools: List[Any], model_name: str = "llama-3.1-8b-instant"):
     """
-    Devolve a instancia do ChatGroq associada as ferramentas (Tool Binding).
+    Retorna uma instancia de ChatGroq com ferramentas atreladas (tool calling).
     """
     llm = get_groq_llm(model_name=model_name)
     if llm and hasattr(llm, "bind_tools"):
