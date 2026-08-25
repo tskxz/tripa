@@ -79,7 +79,38 @@ def get_booking_accommodations_structured(query: BookingSearchQuery) -> BookingS
         budget_level=query.budget_level or "budget"
     )
 
+    dest_clean = query.destination.split(",")[0].strip()
     dest_lower = query.destination.lower()
+    
+    # Dicionario de zonas e alojamentos caracteristicos por destino
+    KNOWN_ACCOMMODATIONS = {
+        "tailandia": ("Hostel & Resort Boutique", "Sukhumvit / Silom (Bangkok)"),
+        "thailand": ("Hostel & Resort Boutique", "Sukhumvit / Silom (Bangkok)"),
+        "las vegas": ("Resort & Casino Hotel", "Las Vegas Strip"),
+        "dubai": ("Hotel de Cidade & Suites", "Downtown / Deira Marina"),
+        "roma": ("Trastevere Guesthouse", "Bairro Historico de Trastevere"),
+        "rome": ("Trastevere Guesthouse", "Bairro Historico de Trastevere"),
+        "paris": ("Boutique Hotel Montmartre", "Montmartre / Quartier Latin"),
+        "londres": ("Central City Hotel", "Covent Garden / Paddington"),
+        "london": ("Central City Hotel", "Covent Garden / Paddington"),
+        "barcelona": ("Gothic Quarter Boutique Hotel", "Bairro Gotico / Eixample"),
+        "madrid": ("Chamberí Hostal", "Puerta del Sol / Chamberí"),
+        "amsterdam": ("Canal House Hotel", "Jordaan / Centro dos Canais"),
+        "amsterdao": ("Canal House Hotel", "Jordaan / Centro dos Canais"),
+        "bali": ("Ubud Bamboo Villa & Guest House", "Ubud / Canggu"),
+        "mexico": ("Coyoacán Boutique Hostal", "Centro Historico / Coyoacán"),
+        " marrocos": ("Riad Tradicional Medina", "Medina Historica de Marrakech"),
+        "fez": ("Riad Tradicional Medina", "Medina de Fez"),
+        "marrakech": ("Riad Tradicional Medina", "Medina de Marrakech"),
+        "india": ("Heritage Haveli & Guesthouse", "Centro Historico / Paharganj"),
+    }
+
+    hotel_name_type, hotel_area = ("Hotel Economico Central", f"Centro Historico de {dest_clean}")
+    for k, v in KNOWN_ACCOMMODATIONS.items():
+        if k in dest_lower:
+            hotel_name_type, hotel_area = v
+            break
+
     base_hotel_price = 60.0
     if any(expensive in dest_lower for expensive in ["dubai", "nova iorque", "new york", "las vegas", "londres", "london", "paris", "tokyo", "japao", "japan", "suica"]):
         base_hotel_price = 110.0
@@ -90,15 +121,15 @@ def get_booking_accommodations_structured(query: BookingSearchQuery) -> BookingS
 
     recommendations = [
         HotelRecommendation(
-            name=f"Hotel Economico Centro {dest_clean}",
-            area=f"Centro Historico de {dest_clean}",
+            name=f"{hotel_name_type} em {dest_clean}",
+            area=hotel_area,
             estimated_price_per_night=base_hotel_price,
             rating_category="Muito Bom (8.2+)",
             booking_url=direct_url
         ),
         HotelRecommendation(
-            name=f"Hostel / Guesthouse Central {dest_clean}",
-            area=f"Zona Proxima da Estacao Principal de {dest_clean}",
+            name=f"Guesthouse / Hostel {dest_clean}",
+            area=f"Zona Central de {dest_clean}",
             estimated_price_per_night=round(base_hotel_price * 0.6, 2),
             rating_category="Economico e Bem Localizado",
             booking_url=direct_url
