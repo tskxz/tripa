@@ -3,13 +3,18 @@ Inicializador e gestor de cliente LLM Groq (Llama 3.2) com Tool Binding.
 """
 import logging
 from typing import Optional, List, Any
+"""
+Inicializador e gestor de cliente LLM Groq (Llama 3.2) com Tool Binding.
+"""
+import logging
+from typing import Optional, List, Any
 from langchain_groq import ChatGroq
 from api.core.config import settings
 
 logger = logging.getLogger(__name__)
 
 
-def get_groq_llm(model_name: str = "llama-3.1-8b-instant", temperature: float = 0.2):
+def get_groq_llm(model_name: str = "openai/gpt-oss-20b", temperature: float = 0.2):
     """
     Retorna uma instancia configurada de ChatGroq para ser usada pelos agentes.
     Retorna None se GROQ_API_KEY nao estiver presente.
@@ -28,7 +33,7 @@ def get_groq_llm(model_name: str = "llama-3.1-8b-instant", temperature: float = 
         return None
 
 
-def get_llm_with_tools(tools: List[Any], model_name: str = "llama-3.1-8b-instant"):
+def get_llm_with_tools(tools: List[Any], model_name: str = "openai/gpt-oss-20b"):
     """
     Retorna uma instancia de ChatGroq com ferramentas atreladas (tool calling).
     """

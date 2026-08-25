@@ -300,7 +300,7 @@ async def _generate_tips_with_llm(
     Usa o Groq LLM para gerar dicas turisticas e gastronomicas especificas e relevantes.
     Retorna string Markdown com lista de dicas, ou string vazia se falhar.
     """
-    llm = get_groq_llm(model_name="llama-3.1-8b-instant", temperature=0.5)
+    llm = get_groq_llm(model_name="openai/gpt-oss-20b", temperature=0.5)
     if not llm:
         return ""
 
