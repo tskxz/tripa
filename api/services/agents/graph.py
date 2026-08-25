@@ -31,30 +31,68 @@ async def parse_intent_node(state: TripaAgentState) -> TripaAgentState:
     """
     user_query = state.get("user_query", "")
     filters = state.get("filters", {})
+    query_lower = user_query.lower()
     
-    # Valores padrao inteligentes
-    origin = "Porto" if "porto" in user_query.lower() else ("Lisboa" if "lisboa" in user_query.lower() else "Porto")
-    destination = "Barcelona"
-    
-    # Tenta detetar destino na query
-    dest_matches = ["barcelona", "madrid", "paris", "roma", "londres", "amsterdam", "berlim", "praga", "milao", "valencia"]
-    for city in dest_matches:
-        if city in user_query.lower():
-            destination = city.capitalize()
+    # 1. Extracao de Origem
+    origin = "Porto"
+    if re.search(r"\b(?:partida|saindo|de|origem)\s+(?:de\s+)?lisboa\b", query_lower) or "lisboa" in query_lower:
+        origin = "Lisboa"
+    elif re.search(r"\b(?:partida|saindo|de|origem)\s+(?:de\s+)?porto\b", query_lower) or "porto" in query_lower:
+        origin = "Porto"
+    elif re.search(r"\b(?:partida|saindo|de|origem)\s+(?:de\s+)?faro\b", query_lower) or "faro" in query_lower:
+        origin = "Faro"
+
+    # 2. Extracao de Destino
+    DEST_MAP = {
+        "barcelona": "Barcelona", "madrid": "Madrid", "paris": "Paris",
+        "roma": "Roma", "rome": "Roma", "londres": "Londres", "london": "Londres",
+        "amsterdam": "Amesterdão", "amesterdao": "Amesterdão", "berlim": "Berlim", "berlin": "Berlim",
+        "praga": "Praga", "prague": "Praga", "milao": "Milão", "milan": "Milão",
+        "valencia": "Valência", "sevilha": "Sevilha", "seville": "Sevilha", "veneza": "Veneza", "venice": "Veneza",
+        "florenca": "Florença", "florence": "Florença", "napoles": "Nápoles", "naples": "Nápoles",
+        "atenas": "Atenas", "athens": "Atenas", "viena": "Viena", "vienna": "Viena",
+        "budapest": "Budapeste", "budapeste": "Budapeste", "varsovia": "Varsóvia", "warsaw": "Varsóvia",
+        "brasil": "Brasil", "brazil": "Brasil", "rio de janeiro": "Rio de Janeiro", "salvador": "Salvador",
+        "nova iorque": "Nova Iorque", "new york": "Nova Iorque", "toquio": "Tóquio", "tokyo": "Tóquio",
+        "dubai": "Dubai", "cancun": "Cancún", "maldivas": "Maldivas", "maldives": "Maldivas",
+        "tailandia": "Tailândia", "thailand": "Tailândia", "banguecoque": "Banguecoque", "bangkok": "Banguecoque"
+    }
+
+    destination = None
+    for alias, city_name in DEST_MAP.items():
+        if alias in query_lower:
+            # Ignorar se o alias for a origem detetada na clausula de partida
+            if city_name.lower() == origin.lower() and re.search(r"\b(?:partida|saindo|de|origem)\s+(?:de\s+)?" + alias, query_lower):
+                continue
+            destination = city_name
             break
 
-    # Duracao padrao
+    if not destination:
+        match = re.search(r'\b(?:em|para|ir\s+ao?|até|no|na)\s+([A-ZÁÉÍÓÚÀÂÊÔÃÕÜa-záéíóúàâêôãõü]+(?:\s+[A-ZÁÉÍÓÚÀÂÊÔÃÕÜa-záéíóúàâêôãõü]+)?)', user_query, re.IGNORECASE)
+        if match:
+            extracted = match.group(1).strip()
+            extracted = re.sub(r"\b(com|por|em|de|para|durante|foco|voos|partida)\b.*$", "", extracted, flags=re.IGNORECASE).strip()
+            if extracted and extracted.lower() not in ["mim", "nos", "um", "uma", "2", "3", "4", "5"]:
+                destination = extracted.capitalize()
+
+    if not destination:
+        destination = "Barcelona"
+
+    # 3. Extracao de Duracao
     duration_days = 4
-    days_match = re.search(r"(\d+)\s*dias", user_query.lower())
+    days_match = re.search(r"(\d+)\s*dias?", query_lower)
     if days_match:
         duration_days = int(days_match.group(1))
+    elif "fim de semana" in query_lower or "weekend" in query_lower:
+        duration_days = 3
+    elif "semana" in query_lower or "week" in query_lower:
+        duration_days = 7
 
     passengers = filters.get("travelers", 1)
     max_budget = filters.get("max_budget")
 
-    # Tenta extrair orcamento do texto se nao passado nos filtros
     if not max_budget:
-        budget_match = re.search(r"(\d+)\s*(eur|euros|€)", user_query.lower())
+        budget_match = re.search(r"(\d+)\s*(eur|euros|€)", query_lower)
         if budget_match:
             max_budget = float(budget_match.group(1))
 
