@@ -19,7 +19,7 @@ O Tripa AI é um assistente inteligente concebido para analisar indicações em 
 
 - **Frontend**: Next.js 16 (App Router, React 19, TypeScript, Tailwind CSS)
 - **Backend API**: FastAPI (Python 3.11+, Pydantic v2) em Vercel Serverless Functions
-- **Inferencia LLM**: Groq Cloud API (Modelos Llama 3.2)
+- **Inferencia LLM**: Groq Cloud API (`openai/gpt-oss-20b`)
 - **Orquestracao**: LangChain / LangGraph
 - **Ferramentas e Dados**: Kiwi (Voos), Tavily (Pesquisa Web), Booking.com (Alojamento)
 - **Plataforma de Deploy**: Vercel (Frontend e Backend integrados)
