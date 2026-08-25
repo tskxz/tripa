@@ -175,26 +175,61 @@ async def calculate_budget_node(state: TripaAgentState) -> TripaAgentState:
     return state
 
 
-def clean_tavily_snippet(content: str, max_chars: int = 220) -> str:
-    """Limpa snippets da Tavily removendo artefactos de HTML, links internos e truncamentos feios."""
-    if not content:
+def _fallback_tips(destination: str, travel_style: str, duration: int) -> str:
+    """
+    Gera dicas turisticas e gastronomicas de fallback quando o LLM nao esta disponivel.
+    """
+    tips = [
+        f"- **Transporte local**: Utilize transportes publicos (metro, autocarros) para poupar e explorar {destination} como um local. Os passes diarios sao geralmente a opcao mais economica.",
+        f"- **Gastronomia economica**: Procure mercados locais, tascas e restaurantes fora das zonas mais turisticas para refeicoes autenticas a precos acessiveis.",
+        f"- **Atracoes gratuitas**: Muitas cidades oferecem museus com entrada gratuita em determinados dias, jardins publicos e miradouros sem custo.",
+        f"- **Cartao de turista**: Verifique se {destination} tem cartao de turista que inclua transporte e descontos em atracoes.",
+        f"- **Agua e refeicoes**: Leve sempre uma garrafa de agua reutilizavel e considere fazer piqueniques com produtos locais para reduzir despesas.",
+    ]
+    return "\n".join(tips[:3])
+
+
+async def _generate_tips_with_llm(
+    destination: str,
+    travel_style: str,
+    duration: int,
+    tavily_context: str
+) -> str:
+    """
+    Usa o Groq LLM para gerar dicas turisticas e gastronomicas concisas e relevantes.
+    Retorna string Markdown com lista de dicas, ou string vazia se falhar.
+    """
+    llm = get_groq_llm(temperature=0.4)
+    if not llm:
         return ""
-    text = re.sub(r"^Title:\s*[^:]+:\s*", "", content)
-    text = re.sub(r"(?:Leia mais|Read more|Ver mais|Saiba mais)\s*[→►»]?", "", text, flags=re.IGNORECASE)
-    text = re.sub(r"https?://\S+", "", text)
-    text = re.sub(r"\s+", " ", text).strip()
-    
-    if len(text) > max_chars:
-        truncated = text[:max_chars]
-        last_period = truncated.rfind(".")
-        if last_period > max_chars // 2:
-            text = truncated[:last_period + 1]
-        else:
-            text = truncated.rstrip() + "..."
-    elif not text.endswith(".") and len(text) > 0:
-        text += "."
-        
-    return text
+
+    context_block = f"\n\nInformacao de contexto recolhida da web (usa apenas se for relevante e factual):\n{tavily_context}" if tavily_context.strip() else ""
+
+    prompt = (
+        f"Gera exatamente 3 dicas turisticas e gastronomicas curtas e uteis para um viajante "
+        f"que vai passar {duration} dias em {destination} com estilo de viagem '{travel_style}'.\n"
+        f"Regras:\n"
+        f"- Responde APENAS com 3 itens de lista Markdown no formato: - **Titulo curto**: descricao de 1-2 frases.\n"
+        f"- Cada dica deve ser concreta, acionavel e especifica para {destination}.\n"
+        f"- Uma dica sobre gastronomia local (prato tipico, mercado ou restaurante economico).\n"
+        f"- Uma dica sobre transporte ou orientacao local.\n"
+        f"- Uma dica sobre atracao imperdivel gratuita ou de baixo custo.\n"
+        f"- Escreve em portugues de Portugal, sem emojis, sem introducao, sem conclusao.\n"
+        f"- NAO uses frases genericas como 'explore a cidade' ou 'divirta-se'.\n"
+        f"{context_block}"
+    )
+
+    try:
+        response = await llm.ainvoke(prompt)
+        raw = response.content.strip() if hasattr(response, "content") else str(response).strip()
+        # Filtrar apenas as linhas de lista Markdown
+        lines = [ln for ln in raw.splitlines() if ln.strip().startswith("-")]
+        if lines:
+            return "\n".join(lines[:3])
+        return raw
+    except Exception as e:
+        logger.warning(f"Geracao de dicas com LLM falhou: {e}")
+        return ""
 
 
 async def generate_response_node(state: TripaAgentState) -> TripaAgentState:
@@ -228,15 +263,33 @@ async def generate_response_node(state: TripaAgentState) -> TripaAgentState:
         f"#### 3. Dicas Turisticas e Gastronomicas\n"
     ]
 
+    # Construir contexto resumido da Tavily para o LLM (sem expor o raw ao utilizador)
+    tavily_context_lines = []
     for item in tavily_items[:3]:
-        raw_title = item.get("title", "Dica de Viagem")
-        title = raw_title.split(" - ")[0].split(" | ")[0].split(":")[0].strip()
-        if not title:
-            title = "Dica de Viagem"
-        raw_content = item.get("content", "")
-        clean_content = clean_tavily_snippet(raw_content)
-        if clean_content:
-            text_parts.append(f"- **{title}**: {clean_content}\n")
+        raw_content = item.get("content", "").strip()
+        if raw_content:
+            # Limpar artefactos basicos antes de passar ao LLM como contexto
+            cleaned = re.sub(r"(?:Leia mais|Read more|Ver mais|Saiba mais)\s*[→►»]?", "", raw_content, flags=re.IGNORECASE)
+            cleaned = re.sub(r"https?://\S+", "", cleaned)
+            cleaned = re.sub(r"^Title:\s*[^:]+:\s*", "", cleaned)
+            cleaned = re.sub(r"\s+", " ", cleaned).strip()
+            if cleaned:
+                tavily_context_lines.append(cleaned[:300])
+    tavily_context = " | ".join(tavily_context_lines)
+
+    # Gerar Ponto 3 com LLM
+    tips_text = await _generate_tips_with_llm(
+        destination=destination,
+        travel_style=state.get("travel_style", "economico"),
+        duration=duration,
+        tavily_context=tavily_context
+    )
+
+    if not tips_text:
+        # Fallback curado se LLM nao estiver disponivel
+        tips_text = _fallback_tips(destination, state.get("travel_style", "economico"), duration)
+
+    text_parts.append(tips_text + "\n")
 
     text_parts.append(
         f"\n#### 4. Total Estimado da Viagem: **{budget.get('total_estimated', 0)} {state.get('currency', 'EUR')}** "
